@@ -1,6 +1,10 @@
 import { fetchAniListEntries } from "@/lib/anilist"
 import { loadJimakuSnapshot } from "@/lib/jimaku"
 import { matchAnime } from "@/lib/matching"
+import {
+  readCachedLookupResponse,
+  writeCachedLookupResponse,
+} from "@/lib/runtime-cache"
 import { statusOrder } from "@/lib/status"
 import type { AniListEntry, LookupResponse, OverlapResult } from "@/lib/types"
 
@@ -44,12 +48,19 @@ export async function findOverlap(username: string): Promise<LookupResponse> {
     }
   }
 
+  const cachedResponse = await readCachedLookupResponse(trimmedUsername)
+
+  if (cachedResponse) {
+    return cachedResponse
+  }
+
   const [aniListResult, jimakuEntries] = await Promise.all([
     fetchAniListEntries(trimmedUsername),
     loadJimakuSnapshot(),
   ])
 
   if (!Array.isArray(aniListResult)) {
+    await writeCachedLookupResponse(trimmedUsername, aniListResult)
     return aniListResult
   }
 
@@ -77,11 +88,15 @@ export async function findOverlap(username: string): Promise<LookupResponse> {
     })
     .filter((result): result is OverlapResult => result !== null)
 
-  return {
+  const response = {
     ok: true,
     username: trimmedUsername,
     totalAnime: aniListResult.length,
     matchedCount: results.length,
     results: sortResults(results),
-  }
+  } satisfies LookupResponse
+
+  await writeCachedLookupResponse(trimmedUsername, response)
+
+  return response
 }
