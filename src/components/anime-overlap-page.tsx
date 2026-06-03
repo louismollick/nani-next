@@ -173,7 +173,7 @@ function ResultCard({
                   ) : null}
                   {result.completeness === "incomplete" ? (
                     <WarningDot
-                      label="Incomplete Jimaku collection"
+                      label="Incomplete Jimaku subtitles"
                       tone="red"
                     />
                   ) : null}
@@ -285,10 +285,10 @@ function ResultDialog({
                   {result.completeness === "incomplete" ? (
                     <div className="inline-flex items-center gap-2 rounded-full border border-rose-500/20 bg-rose-500/10 px-3 py-1 text-sm text-rose-200">
                       <WarningDot
-                        label="Incomplete Jimaku collection"
+                        label="Incomplete Jimaku subtitles"
                         tone="red"
                       />
-                      <span>Incomplete</span>
+                      <span>Incomplete Jimaku subtitles</span>
                     </div>
                   ) : null}
                 </div>
@@ -415,6 +415,7 @@ export function AnimeOverlapPage({
   )
   const [selectedGenres, setSelectedGenres] = useState(new Set<string>())
   const [hideIncomplete, setHideIncomplete] = useState(false)
+  const [hideLowConfidence, setHideLowConfidence] = useState(false)
   const [sortBy, setSortBy] = useState<SortOption>("status")
   const [lookupState, setLookupState] = useState<LookupResponse | null>(null)
   const [isPending, setIsPending] = useState(false)
@@ -456,6 +457,10 @@ export function AnimeOverlapPage({
           }
 
           if (hideIncomplete && result.completeness === "incomplete") {
+            return false
+          }
+
+          if (hideLowConfidence && result.isLowConfidence) {
             return false
           }
 
@@ -629,7 +634,7 @@ export function AnimeOverlapPage({
 
                 <div className="space-y-2">
                   <Label className="text-[13px] font-medium text-slate-400">
-                    Completeness
+                    Jimaku subtitle completeness
                   </Label>
                   <div className="flex items-center gap-3 text-sm text-slate-300">
                     <Checkbox
@@ -643,7 +648,28 @@ export function AnimeOverlapPage({
                       className="text-sm font-normal text-slate-300"
                       htmlFor="hide-incomplete"
                     >
-                      Hide incomplete
+                      Hide incomplete Jimaku subtitles
+                    </Label>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[13px] font-medium text-slate-400">
+                    Match confidence
+                  </Label>
+                  <div className="flex items-center gap-3 text-sm text-slate-300">
+                    <Checkbox
+                      checked={hideLowConfidence}
+                      id="hide-low-confidence"
+                      onCheckedChange={(checked) =>
+                        setHideLowConfidence(Boolean(checked))
+                      }
+                    />
+                    <Label
+                      className="text-sm font-normal text-slate-300"
+                      htmlFor="hide-low-confidence"
+                    >
+                      Hide low confidence matches
                     </Label>
                   </div>
                 </div>

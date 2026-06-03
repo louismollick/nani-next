@@ -233,7 +233,7 @@ describe("AnimeOverlapPage", () => {
     expect(screen.getAllByText("Blue Box").length).toBeGreaterThan(0)
   })
 
-  it("filters out incomplete entries when hide incomplete is enabled", async () => {
+  it("filters out incomplete entries when hide incomplete Jimaku subtitles is enabled", async () => {
     const lookup = vi.fn().mockResolvedValue(successResponse())
     render(<AnimeOverlapPage lookup={lookup} />)
 
@@ -245,9 +245,29 @@ describe("AnimeOverlapPage", () => {
     await screen.findByText("3 matches")
     expect((await screen.findAllByText("Orb")).length).toBeGreaterThan(0)
 
-    fireEvent.click(screen.getByLabelText("Hide incomplete"))
+    fireEvent.click(screen.getByLabelText("Hide incomplete Jimaku subtitles"))
 
     expect(screen.queryByText("Orb")).not.toBeInTheDocument()
+    expect(screen.getAllByText("Blue Box").length).toBeGreaterThan(0)
+  })
+
+  it("filters out low confidence entries when hide low confidence matches is enabled", async () => {
+    const lookup = vi.fn().mockResolvedValue(successResponse())
+    render(<AnimeOverlapPage lookup={lookup} />)
+
+    fireEvent.change(screen.getByPlaceholderText("Enter AniList username"), {
+      target: { value: "mollicl" },
+    })
+    fireEvent.click(screen.getByRole("button", { name: /find overlap/i }))
+
+    await screen.findByText("3 matches")
+    expect(
+      (await screen.findAllByText("Low Confidence Show")).length
+    ).toBeGreaterThan(0)
+
+    fireEvent.click(screen.getByLabelText("Hide low confidence matches"))
+
+    expect(screen.queryByText("Low Confidence Show")).not.toBeInTheDocument()
     expect(screen.getAllByText("Blue Box").length).toBeGreaterThan(0)
   })
 
