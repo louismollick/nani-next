@@ -1,8 +1,9 @@
 import { getCache } from "@vercel/functions"
+import {
+  errorLookupTtlSeconds,
+  successLookupTtlSeconds,
+} from "@/lib/lookup-cache"
 import type { LookupResponse } from "@/lib/types"
-
-const successLookupTtlSeconds = 60 * 60
-const errorLookupTtlSeconds = 10 * 60
 
 export function shouldUseVercelRuntimeCache() {
   return process.env.VERCEL === "1"

@@ -39,6 +39,7 @@ export function sortResults(results: OverlapResult[]) {
 
 export async function findOverlap(username: string): Promise<LookupResponse> {
   const trimmedUsername = username.trim()
+  const fetchedAt = new Date().toISOString()
 
   if (!trimmedUsername) {
     return {
@@ -91,6 +92,7 @@ export async function findOverlap(username: string): Promise<LookupResponse> {
   const response = {
     ok: true,
     username: trimmedUsername,
+    fetchedAt,
     totalAnime: aniListResult.length,
     matchedCount: results.length,
     results: sortResults(results),

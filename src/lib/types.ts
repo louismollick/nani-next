@@ -90,6 +90,7 @@ export type LookupResponse =
   | {
       ok: true
       username: string
+      fetchedAt: string
       totalAnime: number
       matchedCount: number
       results: OverlapResult[]

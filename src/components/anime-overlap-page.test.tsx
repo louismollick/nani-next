@@ -7,6 +7,7 @@ function successResponse(): LookupResponse {
   return {
     ok: true,
     username: "mollicl",
+    fetchedAt: "2026-06-02T22:14:00.000Z",
     totalAnime: 3,
     matchedCount: 3,
     results: [
@@ -189,6 +190,8 @@ describe("AnimeOverlapPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /find overlap/i }))
 
     await screen.findByText("3 matches")
+    expect(screen.getByText(/aniList entries scanned/i)).toBeInTheDocument()
+    expect(screen.getByText(/fetched/i)).toBeInTheDocument()
     expect((await screen.findAllByText("Blue Box")).length).toBeGreaterThan(0)
     expect(
       screen.queryByText(/your anilist watch list, filtered down/i)
@@ -206,6 +209,36 @@ describe("AnimeOverlapPage", () => {
     await waitFor(() => {
       expect(screen.getAllByText("Blue Box").length).toBeGreaterThan(0)
     })
+  })
+
+  it("shows AniList cache details in a tooltip", async () => {
+    const dateNowSpy = vi
+      .spyOn(Date, "now")
+      .mockReturnValue(new Date("2026-06-02T22:26:00.000Z").getTime())
+
+    const lookup = vi.fn().mockResolvedValue(successResponse())
+    render(<AnimeOverlapPage lookup={lookup} />)
+
+    fireEvent.change(screen.getByPlaceholderText("Enter AniList username"), {
+      target: { value: "mollicl" },
+    })
+    fireEvent.click(screen.getByRole("button", { name: /find overlap/i }))
+
+    const freshnessTrigger = await screen.findByRole("button", {
+      name: "AniList fetch details",
+    })
+
+    expect(screen.getByText("fetched 12 minutes ago")).toBeInTheDocument()
+
+    fireEvent.focus(freshnessTrigger)
+
+    const tooltip = await screen.findByRole("tooltip")
+    expect(tooltip.textContent).toContain("Fetched ")
+    expect(tooltip.textContent).toContain(
+      "AniList lookups are cached per user for 1 hour."
+    )
+
+    dateNowSpy.mockRestore()
   })
 
   it("filters by airing status and genre", async () => {

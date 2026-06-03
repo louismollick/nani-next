@@ -2,12 +2,13 @@ import { useServerFn } from "@tanstack/react-start"
 import {
   AlertCircle,
   ExternalLink,
+  Info,
   LoaderCircle,
   Search,
   Sparkles,
   TriangleAlert,
 } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -32,6 +33,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { successLookupTtlSeconds } from "@/lib/lookup-cache"
 import {
   mediaStatusLabel,
   statusDotClassName,
@@ -52,6 +54,94 @@ import { cn } from "@/lib/utils"
 type AnimeOverlapPageProps = {
   initialUsername?: string
   lookup: (input: { data: { username: string } }) => Promise<LookupResponse>
+}
+
+const relativeTimeFormatter = new Intl.RelativeTimeFormat(undefined, {
+  numeric: "auto",
+})
+
+const absoluteTimeFormatter = new Intl.DateTimeFormat(undefined, {
+  dateStyle: "medium",
+  timeStyle: "short",
+})
+
+function formatRelativeFetchedAt(value: string, now: number) {
+  const fetchedAt = new Date(value).getTime()
+
+  if (Number.isNaN(fetchedAt)) {
+    return "fetched recently"
+  }
+
+  const elapsedSeconds = Math.round((now - fetchedAt) / 1000)
+  const relativeSeconds = elapsedSeconds * -1
+  const absoluteElapsedSeconds = Math.abs(elapsedSeconds)
+
+  if (absoluteElapsedSeconds < 60) {
+    return "fetched just now"
+  }
+
+  if (absoluteElapsedSeconds < 60 * 60) {
+    return `fetched ${relativeTimeFormatter.format(
+      Math.round(relativeSeconds / 60),
+      "minute"
+    )}`
+  }
+
+  if (absoluteElapsedSeconds < 60 * 60 * 24) {
+    return `fetched ${relativeTimeFormatter.format(
+      Math.round(relativeSeconds / (60 * 60)),
+      "hour"
+    )}`
+  }
+
+  return `fetched ${relativeTimeFormatter.format(
+    Math.round(relativeSeconds / (60 * 60 * 24)),
+    "day"
+  )}`
+}
+
+function formatAbsoluteFetchedAt(value: string) {
+  const fetchedAt = new Date(value)
+
+  if (Number.isNaN(fetchedAt.getTime())) {
+    return "Fetch time unavailable."
+  }
+
+  return `Fetched ${absoluteTimeFormatter.format(fetchedAt)}.`
+}
+
+function LookupFreshness({ fetchedAt }: { fetchedAt: string }) {
+  const [now, setNow] = useState(() => Date.now())
+
+  useEffect(() => {
+    const timerId = window.setInterval(() => {
+      setNow(Date.now())
+    }, 60 * 1000)
+
+    return () => window.clearInterval(timerId)
+  }, [])
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          aria-label="AniList fetch details"
+          className="inline-flex items-center gap-1.5 text-slate-400 underline decoration-slate-700 underline-offset-4 hover:text-slate-300"
+          type="button"
+        >
+          <span>{formatRelativeFetchedAt(fetchedAt, now)}</span>
+          <Info className="size-3.5" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-64 text-left leading-5">
+        <p>{formatAbsoluteFetchedAt(fetchedAt)}</p>
+        <p>
+          AniList lookups are cached per user for{" "}
+          {successLookupTtlSeconds / 60 / 60} hour.
+        </p>
+      </TooltipContent>
+    </Tooltip>
+  )
 }
 
 function sortResults(results: OverlapResult[], sortBy: SortOption) {
@@ -553,7 +643,11 @@ export function AnimeOverlapPage({
                   {lookupState.username}
                 </span>
                 <span>{lookupState.matchedCount} matches</span>
-                <span>{lookupState.totalAnime} AniList entries scanned</span>
+                <span className="flex flex-wrap items-center justify-center gap-1.5">
+                  <span>{lookupState.totalAnime} AniList entries scanned</span>
+                  <span aria-hidden="true">•</span>
+                  <LookupFreshness fetchedAt={lookupState.fetchedAt} />
+                </span>
               </div>
             ) : null}
           </div>

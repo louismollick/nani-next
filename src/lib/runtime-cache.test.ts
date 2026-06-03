@@ -64,6 +64,7 @@ describe("runtime cache", () => {
       getLookupCacheTtlSeconds({
         ok: true,
         username: "mollicl",
+        fetchedAt: "2026-06-02T22:14:00.000Z",
         totalAnime: 1,
         matchedCount: 1,
         results: [],
@@ -92,6 +93,7 @@ describe("runtime cache", () => {
     const cachedResponse: LookupResponse = {
       ok: true,
       username: "mollicl",
+      fetchedAt: "2026-06-02T22:14:00.000Z",
       totalAnime: 1,
       matchedCount: 1,
       results: [],
