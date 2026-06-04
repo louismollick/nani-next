@@ -1,22 +1,21 @@
-export const anilistWatchStatuses = [
+export const animeSources = ["anilist", "myanimelist"] as const
+
+export const watchStatuses = [
   "CURRENT",
   "PLANNING",
   "COMPLETED",
   "PAUSED",
   "DROPPED",
-  "REPEATING",
 ] as const
 
-export const anilistMediaStatuses = [
+export const mediaStatuses = [
   "FINISHED",
   "RELEASING",
   "CANCELLED",
   "HIATUS",
 ] as const
-export const anilistMediaStatusesAll = [
-  ...anilistMediaStatuses,
-  "NOT_YET_RELEASED",
-] as const
+
+export const mediaStatusesAll = [...mediaStatuses, "NOT_YET_RELEASED"] as const
 
 export const sortOptions = ["status", "averageScore", "popularity"] as const
 export const difficultyFilterModes = [
@@ -34,20 +33,28 @@ export const learnNativelyJlptEquivalents = [
   "N1+",
 ] as const
 
-export type AniListWatchStatus = (typeof anilistWatchStatuses)[number]
+export type AnimeSource = (typeof animeSources)[number]
+export type WatchStatus = (typeof watchStatuses)[number]
 export type SortOption = (typeof sortOptions)[number]
 export type DifficultyFilterMode = (typeof difficultyFilterModes)[number]
 export type LearnNativelyJlptEquivalent =
   (typeof learnNativelyJlptEquivalents)[number]
+export type MediaStatus = (typeof mediaStatusesAll)[number] | null
 
-export type AniListMediaStatus = (typeof anilistMediaStatusesAll)[number] | null
+export type AnimeTitle = {
+  primary: string | null
+  english: string | null
+  native: string | null
+}
 
-export type AniListMedia = {
+export type AnimeMedia = {
   id: number
+  anilistId: number | null
+  myanimelistId: number | null
   episodes: number | null
   averageScore: number | null
   popularity: number | null
-  status: AniListMediaStatus
+  status: MediaStatus
   genres: string[]
   format: string | null
   siteUrl: string
@@ -56,24 +63,22 @@ export type AniListMedia = {
     large: string
     color: string | null
   }
-  title: {
-    romaji: string | null
-    english: string | null
-    native: string | null
-  }
+  title: AnimeTitle
 }
 
-export type AniListEntry = {
+export type AnimeEntry = {
+  source: AnimeSource
   id: number
-  status: AniListWatchStatus
+  status: WatchStatus
   score: number | null
   progress: number | null
-  media: AniListMedia
+  media: AnimeMedia
 }
 
 export type JimakuEntry = {
   id: number
   anilistId: number | null
+  myanimelistId: number | null
   url: string
   name: string
   englishName: string | null
@@ -105,7 +110,11 @@ export type LearnNativelyAnimationLevelEntry = {
   level: string
 }
 
-export type MatchReason = "anilist-id" | "exact-title" | "fuzzy"
+export type MatchReason =
+  | "anilist-id"
+  | "myanimelist-id"
+  | "exact-title"
+  | "fuzzy"
 
 export type MatchCandidate = {
   jimakuEntry: JimakuEntry
@@ -129,7 +138,7 @@ export type LearnNativelyMatch =
 export type Completeness = "complete" | "incomplete" | "unknown"
 
 export type OverlapResult = {
-  anilistEntry: AniListEntry
+  entry: AnimeEntry
   matchedJimaku: JimakuEntry
   alternates: MatchCandidate[]
   matchScore: number
@@ -144,6 +153,7 @@ export type OverlapResult = {
 export type LookupResponse =
   | {
       ok: true
+      source: AnimeSource
       username: string
       fetchedAt: string
       totalAnime: number

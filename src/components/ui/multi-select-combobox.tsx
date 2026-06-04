@@ -73,7 +73,7 @@ export function MultiSelectCombobox({
         <Button
           aria-label={ariaLabel}
           aria-expanded={open}
-          className="h-10 w-full justify-between rounded border-0 bg-slate-800/60 px-3.5 text-left text-[15px] font-normal text-slate-400 shadow-none hover:bg-slate-800 aria-expanded:bg-slate-800/60 aria-expanded:text-slate-400"
+          className="h-10 w-full justify-between rounded border-slate-800 bg-slate-800/60 px-3.5 text-left text-[15px] font-normal text-slate-100 shadow-none hover:bg-slate-800 hover:text-slate-100 aria-expanded:bg-slate-800 aria-expanded:text-slate-100"
           role="combobox"
           variant="outline"
         >
@@ -84,18 +84,17 @@ export function MultiSelectCombobox({
                 (placeholderWhenAllSelected &&
                   selectedOptions.length === options.length &&
                   options.length > 0)) &&
-                "text-slate-400"
+                "text-slate-500"
             )}
           >
             {triggerLabel}
           </span>
-          <ChevronDown className="size-4 shrink-0 text-slate-400 opacity-90" />
+          <ChevronDown className="size-4 shrink-0 text-slate-500 opacity-90" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[var(--radix-popover-trigger-width)] rounded p-0">
         <div className="border-b border-slate-800 p-3">
           <Input
-            className="rounded border-slate-800 bg-slate-900 text-sm text-slate-100 placeholder:text-slate-500"
             onChange={(event) => setQuery(event.target.value)}
             placeholder={searchPlaceholder}
             value={query}
@@ -108,7 +107,7 @@ export function MultiSelectCombobox({
 
               return (
                 <button
-                  className="flex w-full items-center gap-2 rounded-sm px-2 py-2 text-left text-sm text-slate-400 hover:bg-slate-800"
+                  className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-800 hover:text-slate-100"
                   key={option.value}
                   onClick={() => {
                     const nextSelectedValues = new Set(selectedValues)

@@ -1,21 +1,31 @@
-# TanStack Start + shadcn/ui
+# jimaku-watch-list
 
-This is a template for a new TanStack Start project with React, TypeScript, and shadcn/ui.
+This app helps Japanese learners pick anime to watch with Japanese subtitles.
 
-## Adding components
+It answers three questions at once:
 
-To add components to your app, run the following command:
+- Is a Japanese subtitle file available on Jimaku?
+- Is the anime too hard or at a good level?
+- Is it already on my anime list?
+
+The app combines data from:
+
+- AniList or MyAnimeList for what you want to watch
+- Jimaku for Japanese subtitle availability
+- jpdb.io for subtitle difficulty data
+- Learn Natively for rough reading level
+
+## Local dev
 
 ```bash
-npx shadcn@latest add button
+pnpm install
+pnpm dev
 ```
 
-This will place the ui components in the `components` directory.
+## Data refresh scripts
 
-## Using components
-
-To use the components in your app, import them as follows:
-
-```tsx
-import { Button } from "@/components/ui/button";
+```bash
+pnpm refresh-jimaku-snapshot
+pnpm refresh-jpdb-anime-difficulty
+pnpm refresh-learnnatively-animation-levels
 ```

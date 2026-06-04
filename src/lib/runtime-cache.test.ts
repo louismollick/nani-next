@@ -48,7 +48,9 @@ describe("runtime cache", () => {
   })
 
   it("normalizes lookup cache keys", () => {
-    expect(getLookupCacheKey("  MolLiCl  ")).toBe("overlap:v2:mollicl")
+    expect(getLookupCacheKey("anilist", "  MolLiCl  ")).toBe(
+      "overlap:v3:anilist:mollicl"
+    )
   })
 
   it("uses shorter ttl for upstream errors", () => {
@@ -63,6 +65,7 @@ describe("runtime cache", () => {
     expect(
       getLookupCacheTtlSeconds({
         ok: true,
+        source: "anilist",
         username: "mollicl",
         fetchedAt: "2026-06-02T22:14:00.000Z",
         totalAnime: 1,
@@ -75,8 +78,10 @@ describe("runtime cache", () => {
   it("skips cache access off Vercel", async () => {
     delete process.env.VERCEL
 
-    await expect(readCachedLookupResponse("mollicl")).resolves.toBeNull()
-    await writeCachedLookupResponse("mollicl", {
+    await expect(
+      readCachedLookupResponse("anilist", "mollicl")
+    ).resolves.toBeNull()
+    await writeCachedLookupResponse("anilist", "mollicl", {
       ok: false,
       code: "NOT_FOUND",
       message: "missing",
@@ -92,6 +97,7 @@ describe("runtime cache", () => {
 
     const cachedResponse: LookupResponse = {
       ok: true,
+      source: "anilist",
       username: "mollicl",
       fetchedAt: "2026-06-02T22:14:00.000Z",
       totalAnime: 1,
@@ -102,17 +108,21 @@ describe("runtime cache", () => {
     getMock.mockResolvedValueOnce(cachedResponse)
     setMock.mockResolvedValueOnce(undefined)
 
-    await expect(readCachedLookupResponse("MolLiCl")).resolves.toEqual(
-      cachedResponse
-    )
+    await expect(
+      readCachedLookupResponse("anilist", "MolLiCl")
+    ).resolves.toEqual(cachedResponse)
 
-    await writeCachedLookupResponse("MolLiCl", cachedResponse)
+    await writeCachedLookupResponse("anilist", "MolLiCl", cachedResponse)
 
     expect(getCacheMock).toHaveBeenCalledTimes(2)
-    expect(getMock).toHaveBeenCalledWith("overlap:v2:mollicl")
-    expect(setMock).toHaveBeenCalledWith("overlap:v2:mollicl", cachedResponse, {
-      ttl: 3600,
-      tags: ["anilist-user:mollicl"],
-    })
+    expect(getMock).toHaveBeenCalledWith("overlap:v3:anilist:mollicl")
+    expect(setMock).toHaveBeenCalledWith(
+      "overlap:v3:anilist:mollicl",
+      cachedResponse,
+      {
+        ttl: 3600,
+        tags: ["lookup-user:anilist:mollicl"],
+      }
+    )
   })
 })

@@ -5,19 +5,22 @@ import {
   matchLearnNativelyAnimationLevel,
 } from "@/lib/matching"
 import type {
-  AniListEntry,
+  AnimeEntry,
   JimakuEntry,
   JpdbAnimeDifficultyEntry,
   LearnNativelyAnimationLevelEntry,
 } from "@/lib/types"
 
-const baseAniListEntry: AniListEntry = {
+const baseAniListEntry: AnimeEntry = {
+  source: "anilist",
   id: 1,
   progress: 3,
   score: 80,
   status: "CURRENT",
   media: {
     id: 101,
+    anilistId: 101,
+    myanimelistId: 201,
     episodes: 12,
     averageScore: 80,
     popularity: 25000,
@@ -31,7 +34,7 @@ const baseAniListEntry: AniListEntry = {
       color: "#4f8dfc",
     },
     title: {
-      romaji: "3-gatsu no Lion",
+      primary: "3-gatsu no Lion",
       english: "March comes in like a lion",
       native: "３月のライオン",
     },
@@ -41,6 +44,7 @@ const baseAniListEntry: AniListEntry = {
 const byIdMatch: JimakuEntry = {
   id: 10,
   anilistId: 101,
+  myanimelistId: 201,
   url: "https://jimaku.cc/entry/10",
   name: "3-gatsu no Lion",
   englishName: "March comes in like a lion",
@@ -92,8 +96,10 @@ describe("matchAnime", () => {
         media: {
           ...baseAniListEntry.media,
           id: 999,
+          anilistId: null,
+          myanimelistId: null,
           title: {
-            romaji: "Dandadann",
+            primary: "Dandadann",
             english: null,
             native: null,
           },
@@ -105,6 +111,7 @@ describe("matchAnime", () => {
           ...byIdMatch,
           id: 11,
           anilistId: null,
+          myanimelistId: null,
           name: "Dandadan",
           titles: ["Dandadan"],
           normalizedTitles: ["dandadan"],
@@ -113,6 +120,7 @@ describe("matchAnime", () => {
           ...byIdMatch,
           id: 12,
           anilistId: null,
+          myanimelistId: null,
           name: "Dandadn",
           titles: ["Dandadn"],
           normalizedTitles: ["dandadn"],
@@ -130,8 +138,10 @@ describe("matchAnime", () => {
         media: {
           ...baseAniListEntry.media,
           id: 999,
+          anilistId: null,
+          myanimelistId: null,
           title: {
-            romaji: "Canaan",
+            primary: "Canaan",
             english: null,
             native: null,
           },
@@ -143,6 +153,7 @@ describe("matchAnime", () => {
           ...byIdMatch,
           id: 15,
           anilistId: null,
+          myanimelistId: null,
           name: "NANA",
           titles: ["NANA"],
           normalizedTitles: ["nana"],
@@ -160,8 +171,10 @@ describe("matchAnime", () => {
         media: {
           ...baseAniListEntry.media,
           id: 999,
+          anilistId: null,
+          myanimelistId: null,
           title: {
-            romaji: "March Comes Like a Lion",
+            primary: "March Comes Like a Lion",
             english: null,
             native: null,
           },
@@ -173,6 +186,7 @@ describe("matchAnime", () => {
           ...byIdMatch,
           id: 16,
           anilistId: null,
+          myanimelistId: null,
           name: "March Comes in Like a Lion",
           titles: ["March Comes in Like a Lion"],
           normalizedTitles: ["march comes in like a lion"],
@@ -210,8 +224,10 @@ describe("matchAnime", () => {
         media: {
           ...baseAniListEntry.media,
           id: 999,
+          anilistId: null,
+          myanimelistId: null,
           title: {
-            romaji: "March Comes Like a Lion",
+            primary: "March Comes Like a Lion",
             english: null,
             native: null,
           },
@@ -232,8 +248,10 @@ describe("matchAnime", () => {
         media: {
           ...baseAniListEntry.media,
           id: 999,
+          anilistId: null,
+          myanimelistId: null,
           title: {
-            romaji: "Canaan",
+            primary: "Canaan",
             english: null,
             native: null,
           },
@@ -259,8 +277,10 @@ describe("matchAnime", () => {
         media: {
           ...baseAniListEntry.media,
           id: 999,
+          anilistId: null,
+          myanimelistId: null,
           title: {
-            romaji: "Dandadann",
+            primary: "Dandadann",
             english: null,
             native: null,
           },

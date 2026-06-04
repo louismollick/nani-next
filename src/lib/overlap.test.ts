@@ -1,19 +1,22 @@
 import { describe, expect, it } from "vitest"
 import { buildOverlapResults, getCompleteness } from "@/lib/overlap"
 import type {
-  AniListEntry,
+  AnimeEntry,
   JimakuEntry,
   JpdbAnimeDifficultyEntry,
   LearnNativelyAnimationLevelEntry,
 } from "@/lib/types"
 
-const finishedEntry: AniListEntry = {
+const finishedEntry: AnimeEntry = {
+  source: "anilist",
   id: 1,
   progress: 12,
   score: 90,
   status: "COMPLETED",
   media: {
     id: 201,
+    anilistId: 201,
+    myanimelistId: 301,
     episodes: 12,
     averageScore: 87,
     popularity: 55000,
@@ -27,7 +30,7 @@ const finishedEntry: AniListEntry = {
       color: "#4f8dfc",
     },
     title: {
-      romaji: "Ping Pong",
+      primary: "Ping Pong",
       english: "Ping Pong",
       native: "ピンポン",
     },
@@ -37,6 +40,7 @@ const finishedEntry: AniListEntry = {
 const jimakuEntry: JimakuEntry = {
   id: 301,
   anilistId: 201,
+  myanimelistId: 301,
   url: "https://jimaku.cc/entry/301",
   name: "Ping Pong",
   englishName: "Ping Pong",

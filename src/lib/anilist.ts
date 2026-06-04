@@ -1,4 +1,9 @@
-import type { AniListEntry, LookupResponse } from "@/lib/types"
+import type {
+  AnimeEntry,
+  LookupResponse,
+  MediaStatus,
+  WatchStatus,
+} from "@/lib/types"
 
 const anilistEndpoint = "https://graphql.anilist.co"
 
@@ -13,6 +18,7 @@ const mediaListCollectionQuery = `
           progress
           media {
             id
+            idMal
             episodes
             averageScore
             popularity
@@ -37,11 +43,45 @@ const mediaListCollectionQuery = `
   }
 `
 
+type AniListGraphQlEntry = {
+  id: number
+  status:
+    | "CURRENT"
+    | "PLANNING"
+    | "COMPLETED"
+    | "PAUSED"
+    | "DROPPED"
+    | "REPEATING"
+  score: number | null
+  progress: number | null
+  media: {
+    id: number
+    idMal: number | null
+    episodes: number | null
+    averageScore: number | null
+    popularity: number | null
+    status: MediaStatus
+    genres: string[]
+    format: string | null
+    siteUrl: string
+    synonyms: string[]
+    coverImage: {
+      large: string
+      color: string | null
+    }
+    title: {
+      romaji: string | null
+      english: string | null
+      native: string | null
+    }
+  }
+}
+
 type AniListGraphQlResponse = {
   data?: {
     MediaListCollection: {
       lists: Array<{
-        entries: AniListEntry[]
+        entries: AniListGraphQlEntry[]
       }>
     } | null
   }
@@ -51,9 +91,15 @@ type AniListGraphQlResponse = {
   }>
 }
 
+function normalizeAniListWatchStatus(
+  status: AniListGraphQlEntry["status"]
+): WatchStatus {
+  return status === "REPEATING" ? "CURRENT" : status
+}
+
 export async function fetchAniListEntries(
   username: string
-): Promise<LookupResponse | AniListEntry[]> {
+): Promise<LookupResponse | AnimeEntry[]> {
   const response = await fetch(anilistEndpoint, {
     method: "POST",
     headers: {
@@ -122,4 +168,30 @@ export async function fetchAniListEntries(
     .filter(
       (entry) => entry.media?.id && entry.media.status !== "NOT_YET_RELEASED"
     )
+    .map((entry) => ({
+      source: "anilist" as const,
+      id: entry.id,
+      status: normalizeAniListWatchStatus(entry.status),
+      score: entry.score,
+      progress: entry.progress,
+      media: {
+        id: entry.media.id,
+        anilistId: entry.media.id,
+        myanimelistId: entry.media.idMal,
+        episodes: entry.media.episodes,
+        averageScore: entry.media.averageScore,
+        popularity: entry.media.popularity,
+        status: entry.media.status,
+        genres: entry.media.genres,
+        format: entry.media.format,
+        siteUrl: entry.media.siteUrl,
+        synonyms: entry.media.synonyms,
+        coverImage: entry.media.coverImage,
+        title: {
+          primary: entry.media.title.romaji,
+          english: entry.media.title.english,
+          native: entry.media.title.native,
+        },
+      },
+    }))
 }
