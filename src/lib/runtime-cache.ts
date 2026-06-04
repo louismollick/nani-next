@@ -3,14 +3,14 @@ import {
   errorLookupTtlSeconds,
   successLookupTtlSeconds,
 } from "@/lib/lookup-cache"
-import type { LookupResponse } from "@/lib/types"
+import type { AnimeSource, LookupResponse } from "@/lib/types"
 
 export function shouldUseVercelRuntimeCache() {
   return process.env.VERCEL === "1"
 }
 
-export function getLookupCacheKey(username: string) {
-  return `overlap:v2:${username.trim().toLowerCase()}`
+export function getLookupCacheKey(source: AnimeSource, username: string) {
+  return `overlap:v3:${source}:${username.trim().toLowerCase()}`
 }
 
 export function getLookupCacheTtlSeconds(result: LookupResponse) {
@@ -21,17 +21,21 @@ function getLookupCache() {
   return getCache({ namespace: "jimaku-watch-list" })
 }
 
-export async function readCachedLookupResponse(username: string) {
+export async function readCachedLookupResponse(
+  source: AnimeSource,
+  username: string
+) {
   if (!shouldUseVercelRuntimeCache()) {
     return null
   }
 
   return (await getLookupCache().get(
-    getLookupCacheKey(username)
+    getLookupCacheKey(source, username)
   )) as LookupResponse | null
 }
 
 export async function writeCachedLookupResponse(
+  source: AnimeSource,
   username: string,
   result: LookupResponse
 ) {
@@ -39,8 +43,10 @@ export async function writeCachedLookupResponse(
     return
   }
 
-  await getLookupCache().set(getLookupCacheKey(username), result, {
+  const normalizedUsername = username.trim().toLowerCase()
+
+  await getLookupCache().set(getLookupCacheKey(source, username), result, {
     ttl: getLookupCacheTtlSeconds(result),
-    tags: [`anilist-user:${username.trim().toLowerCase()}`],
+    tags: [`lookup-user:${source}:${normalizedUsername}`],
   })
 }

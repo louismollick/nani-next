@@ -84,10 +84,12 @@ describe("fetchAniListEntries", () => {
     expect(Array.isArray(result)).toBe(true)
     expect(Array.isArray(result) ? result : []).toHaveLength(1)
     expect(Array.isArray(result) ? result[0].media.id : null).toBe(10)
+    expect(Array.isArray(result) ? result[0].media.anilistId : null).toBe(10)
     expect(Array.isArray(result) ? result[0].media.genres : []).toEqual([
       "Action",
       "Drama",
     ])
+    expect(Array.isArray(result) ? result[0].status : null).toBe("CURRENT")
   })
 
   it("returns a user-facing error for missing users", async () => {
@@ -105,5 +107,55 @@ describe("fetchAniListEntries", () => {
     expect(!Array.isArray(result) && !result.ok ? result.code : null).toBe(
       "NOT_FOUND"
     )
+  })
+
+  it("folds repeating entries into current", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        data: {
+          MediaListCollection: {
+            lists: [
+              {
+                entries: [
+                  {
+                    id: 1,
+                    status: "REPEATING",
+                    score: 50,
+                    progress: 1,
+                    media: {
+                      id: 10,
+                      idMal: 20,
+                      episodes: 12,
+                      averageScore: 80,
+                      popularity: 1000,
+                      status: "FINISHED",
+                      genres: ["Action"],
+                      format: "TV",
+                      siteUrl: "https://anilist.co/anime/10",
+                      synonyms: [],
+                      coverImage: {
+                        large: "https://example.com/a.jpg",
+                        color: "#fff",
+                      },
+                      title: {
+                        romaji: "Foo",
+                        english: "Foo",
+                        native: "フー",
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      }),
+    }) as typeof fetch
+
+    const result = await fetchAniListEntries("demo")
+
+    expect(Array.isArray(result) ? result[0].status : null).toBe("CURRENT")
   })
 })

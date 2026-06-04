@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
+import { fetchMyAnimeListIdsForAniListIds } from "../src/lib/anilist-id-map.ts"
 import type { JimakuEntry } from "../src/lib/types.ts"
 
 type JimakuPayload = {
@@ -10,6 +11,7 @@ type JimakuPayload = {
   flags?: number
   japanese_name?: string | null
   last_modified?: number | null
+  myanimelist_id?: number | null
   name: string
 }
 
@@ -91,6 +93,7 @@ function parseHomepageEntries(html: string): JimakuEntryDraft[] {
     entries.push({
       id: entryId,
       anilistId: payload.anilist_id ?? null,
+      myanimelistId: payload.myanimelist_id ?? null,
       url: `https://jimaku.cc${match[2]}`,
       name: payload.name,
       englishName: payload.english_name ?? null,
@@ -143,7 +146,37 @@ async function mapWithConcurrency<TInput, TOutput>(
 
 async function main() {
   const homepageHtml = await fetchText(jimakuHomePage)
-  const baseEntries = parseHomepageEntries(homepageHtml)
+  const parsedEntries = parseHomepageEntries(homepageHtml)
+  console.log(`Collected ${parsedEntries.length} homepage entries`)
+
+  const aniListIds = [
+    ...new Set(
+      parsedEntries.flatMap((entry) =>
+        entry.anilistId !== null ? [entry.anilistId] : []
+      )
+    ),
+  ]
+
+  console.log(`Resolving MyAnimeList ids for ${aniListIds.length} AniList ids`)
+  const myAnimeListIdsByAniListId = await fetchMyAnimeListIdsForAniListIds(
+    aniListIds,
+    {
+      onProgress: ({ completed, total }) => {
+        console.log(`Resolved ${completed}/${total} AniList ids`)
+      },
+    }
+  )
+
+  const baseEntries = parsedEntries.map((entry) => ({
+    ...entry,
+    myanimelistId:
+      entry.myanimelistId ??
+      (entry.anilistId !== null
+        ? (myAnimeListIdsByAniListId.get(entry.anilistId) ?? null)
+        : null),
+  }))
+
+  console.log(`Fetching file counts for ${baseEntries.length} Jimaku entries`)
 
   const completeEntries: JimakuEntry[] = await mapWithConcurrency(
     baseEntries,

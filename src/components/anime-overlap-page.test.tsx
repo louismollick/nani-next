@@ -6,19 +6,23 @@ import type { LookupResponse } from "@/lib/types"
 function successResponse(): LookupResponse {
   return {
     ok: true,
+    source: "anilist",
     username: "mollicl",
     fetchedAt: "2026-06-02T22:14:00.000Z",
     totalAnime: 3,
     matchedCount: 3,
     results: [
       {
-        anilistEntry: {
+        entry: {
+          source: "anilist",
           id: 1,
           status: "CURRENT",
           score: 70,
           progress: 3,
           media: {
             id: 11,
+            anilistId: 11,
+            myanimelistId: 111,
             episodes: 12,
             averageScore: 88,
             popularity: 15000,
@@ -32,7 +36,7 @@ function successResponse(): LookupResponse {
               color: "#4f8dfc",
             },
             title: {
-              romaji: "Blue Box",
+              primary: "Blue Box",
               english: "Blue Box",
               native: "アオのハコ",
             },
@@ -41,6 +45,7 @@ function successResponse(): LookupResponse {
         matchedJimaku: {
           id: 101,
           anilistId: 11,
+          myanimelistId: 111,
           url: "https://jimaku.cc/entry/101",
           name: "Blue Box",
           englishName: "Blue Box",
@@ -89,13 +94,16 @@ function successResponse(): LookupResponse {
         },
       },
       {
-        anilistEntry: {
+        entry: {
+          source: "anilist",
           id: 2,
           status: "PLANNING",
           score: 60,
           progress: 0,
           media: {
             id: 12,
+            anilistId: 12,
+            myanimelistId: 112,
             episodes: 24,
             averageScore: 92,
             popularity: 45000,
@@ -109,7 +117,7 @@ function successResponse(): LookupResponse {
               color: "#edb63f",
             },
             title: {
-              romaji: "Orb",
+              primary: "Orb",
               english: "Orb",
               native: "チ。",
             },
@@ -118,6 +126,7 @@ function successResponse(): LookupResponse {
         matchedJimaku: {
           id: 102,
           anilistId: 12,
+          myanimelistId: 112,
           url: "https://jimaku.cc/entry/102",
           name: "Orb",
           englishName: "Orb",
@@ -166,13 +175,16 @@ function successResponse(): LookupResponse {
         },
       },
       {
-        anilistEntry: {
+        entry: {
+          source: "anilist",
           id: 3,
           status: "COMPLETED",
           score: 80,
           progress: 12,
           media: {
             id: 13,
+            anilistId: 13,
+            myanimelistId: 113,
             episodes: 12,
             averageScore: 75,
             popularity: 9000,
@@ -186,7 +198,7 @@ function successResponse(): LookupResponse {
               color: "#77bc9f",
             },
             title: {
-              romaji: "Low Confidence Show",
+              primary: "Low Confidence Show",
               english: "Low Confidence Show",
               native: "ローコンフィデンス",
             },
@@ -195,6 +207,7 @@ function successResponse(): LookupResponse {
         matchedJimaku: {
           id: 103,
           anilistId: null,
+          myanimelistId: null,
           url: "https://jimaku.cc/entry/103",
           name: "Low Confidence Show",
           englishName: null,
@@ -210,6 +223,7 @@ function successResponse(): LookupResponse {
             jimakuEntry: {
               id: 104,
               anilistId: null,
+              myanimelistId: null,
               url: "https://jimaku.cc/entry/104",
               name: "Low Confidence Show Alt",
               englishName: null,
@@ -252,13 +266,13 @@ describe("AnimeOverlapPage", () => {
     const lookup = vi.fn().mockResolvedValue(successResponse())
     render(<AnimeOverlapPage lookup={lookup} />)
 
-    fireEvent.change(screen.getByPlaceholderText("Enter AniList username"), {
+    fireEvent.change(screen.getByPlaceholderText("Enter username"), {
       target: { value: "mollicl" },
     })
     fireEvent.click(screen.getByRole("button", { name: /find overlap/i }))
 
     await screen.findByText("3 matches")
-    expect(screen.getByText(/aniList entries scanned/i)).toBeInTheDocument()
+    expect(screen.getByText(/entries scanned/i)).toBeInTheDocument()
     expect(screen.getByText(/fetched/i)).toBeInTheDocument()
     expect((await screen.findAllByText("Blue Box")).length).toBeGreaterThan(0)
     expect(
@@ -287,13 +301,13 @@ describe("AnimeOverlapPage", () => {
     const lookup = vi.fn().mockResolvedValue(successResponse())
     render(<AnimeOverlapPage lookup={lookup} />)
 
-    fireEvent.change(screen.getByPlaceholderText("Enter AniList username"), {
+    fireEvent.change(screen.getByPlaceholderText("Enter username"), {
       target: { value: "mollicl" },
     })
     fireEvent.click(screen.getByRole("button", { name: /find overlap/i }))
 
     const freshnessTrigger = await screen.findByRole("button", {
-      name: "AniList fetch details",
+      name: "Fetch details",
     })
 
     expect(screen.getByText("fetched 12 minutes ago")).toBeInTheDocument()
@@ -303,7 +317,7 @@ describe("AnimeOverlapPage", () => {
     const tooltip = await screen.findByRole("tooltip")
     expect(tooltip.textContent).toContain("Fetched ")
     expect(tooltip.textContent).toContain(
-      "AniList lookups are cached per user for 1 hour."
+      "Lookups are cached per user for 1 hour."
     )
 
     dateNowSpy.mockRestore()
@@ -313,7 +327,7 @@ describe("AnimeOverlapPage", () => {
     const lookup = vi.fn().mockResolvedValue(successResponse())
     render(<AnimeOverlapPage lookup={lookup} />)
 
-    fireEvent.change(screen.getByPlaceholderText("Enter AniList username"), {
+    fireEvent.change(screen.getByPlaceholderText("Enter username"), {
       target: { value: "mollicl" },
     })
     fireEvent.click(screen.getByRole("button", { name: /find overlap/i }))
@@ -338,7 +352,7 @@ describe("AnimeOverlapPage", () => {
     const lookup = vi.fn().mockResolvedValue(successResponse())
     render(<AnimeOverlapPage lookup={lookup} />)
 
-    fireEvent.change(screen.getByPlaceholderText("Enter AniList username"), {
+    fireEvent.change(screen.getByPlaceholderText("Enter username"), {
       target: { value: "mollicl" },
     })
     fireEvent.click(screen.getByRole("button", { name: /find overlap/i }))
@@ -354,7 +368,7 @@ describe("AnimeOverlapPage", () => {
     const lookup = vi.fn().mockResolvedValue(successResponse())
     render(<AnimeOverlapPage lookup={lookup} />)
 
-    fireEvent.change(screen.getByPlaceholderText("Enter AniList username"), {
+    fireEvent.change(screen.getByPlaceholderText("Enter username"), {
       target: { value: "mollicl" },
     })
     fireEvent.click(screen.getByRole("button", { name: /find overlap/i }))
@@ -372,7 +386,7 @@ describe("AnimeOverlapPage", () => {
     const lookup = vi.fn().mockResolvedValue(successResponse())
     render(<AnimeOverlapPage lookup={lookup} />)
 
-    fireEvent.change(screen.getByPlaceholderText("Enter AniList username"), {
+    fireEvent.change(screen.getByPlaceholderText("Enter username"), {
       target: { value: "mollicl" },
     })
     fireEvent.click(screen.getByRole("button", { name: /find overlap/i }))
@@ -397,12 +411,9 @@ describe("AnimeOverlapPage", () => {
 
     render(<AnimeOverlapPage lookup={lookup} />)
 
-    fireEvent.change(
-      screen.getAllByPlaceholderText("Enter AniList username")[0],
-      {
-        target: { value: "secret-user" },
-      }
-    )
+    fireEvent.change(screen.getAllByPlaceholderText("Enter username")[0], {
+      target: { value: "secret-user" },
+    })
     fireEvent.click(screen.getByRole("button", { name: /find overlap/i }))
 
     expect(
@@ -414,12 +425,9 @@ describe("AnimeOverlapPage", () => {
     const lookup = vi.fn().mockResolvedValue(successResponse())
     render(<AnimeOverlapPage lookup={lookup} />)
 
-    fireEvent.change(
-      screen.getAllByPlaceholderText("Enter AniList username")[0],
-      {
-        target: { value: "mollicl" },
-      }
-    )
+    fireEvent.change(screen.getAllByPlaceholderText("Enter username")[0], {
+      target: { value: "mollicl" },
+    })
     fireEvent.click(screen.getByRole("button", { name: /find overlap/i }))
 
     await screen.findByText("3 matches")
@@ -436,7 +444,7 @@ describe("AnimeOverlapPage", () => {
     const lookup = vi.fn().mockResolvedValue(successResponse())
     render(<AnimeOverlapPage lookup={lookup} />)
 
-    fireEvent.change(screen.getByPlaceholderText("Enter AniList username"), {
+    fireEvent.change(screen.getByPlaceholderText("Enter username"), {
       target: { value: "mollicl" },
     })
     fireEvent.click(screen.getByRole("button", { name: /find overlap/i }))
@@ -459,7 +467,7 @@ describe("AnimeOverlapPage", () => {
     const lookup = vi.fn().mockResolvedValue(successResponse())
     render(<AnimeOverlapPage lookup={lookup} />)
 
-    fireEvent.change(screen.getByPlaceholderText("Enter AniList username"), {
+    fireEvent.change(screen.getByPlaceholderText("Enter username"), {
       target: { value: "mollicl" },
     })
     fireEvent.click(screen.getByRole("button", { name: /find overlap/i }))
@@ -484,7 +492,7 @@ describe("AnimeOverlapPage", () => {
     const lookup = vi.fn().mockResolvedValue(successResponse())
     render(<AnimeOverlapPage lookup={lookup} />)
 
-    fireEvent.change(screen.getByPlaceholderText("Enter AniList username"), {
+    fireEvent.change(screen.getByPlaceholderText("Enter username"), {
       target: { value: "mollicl" },
     })
     fireEvent.click(screen.getByRole("button", { name: /find overlap/i }))
@@ -505,7 +513,7 @@ describe("AnimeOverlapPage", () => {
     const lookup = vi.fn().mockResolvedValue(successResponse())
     render(<AnimeOverlapPage lookup={lookup} />)
 
-    fireEvent.change(screen.getByPlaceholderText("Enter AniList username"), {
+    fireEvent.change(screen.getByPlaceholderText("Enter username"), {
       target: { value: "mollicl" },
     })
     fireEvent.click(screen.getByRole("button", { name: /find overlap/i }))

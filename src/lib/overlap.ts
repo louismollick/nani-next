@@ -11,13 +11,15 @@ import {
   matchJpdbAnimeDifficulty,
   matchLearnNativelyAnimationLevel,
 } from "@/lib/matching"
+import { fetchMyAnimeListEntries } from "@/lib/myanimelist"
 import {
   readCachedLookupResponse,
   writeCachedLookupResponse,
 } from "@/lib/runtime-cache"
 import { statusOrder } from "@/lib/status"
 import type {
-  AniListEntry,
+  AnimeEntry,
+  AnimeSource,
   JimakuEntry,
   JpdbAnimeDifficultyEntry,
   LearnNativelyAnimationLevelEntry,
@@ -25,7 +27,7 @@ import type {
   OverlapResult,
 } from "@/lib/types"
 
-export function getCompleteness(entry: AniListEntry, fileCount: number) {
+export function getCompleteness(entry: AnimeEntry, fileCount: number) {
   if (
     entry.media.status !== "FINISHED" ||
     typeof entry.media.episodes !== "number"
@@ -41,37 +43,36 @@ export function getCompleteness(entry: AniListEntry, fileCount: number) {
 export function sortResults(results: OverlapResult[]) {
   return [...results].sort((left, right) => {
     const statusDelta =
-      statusOrder[left.anilistEntry.status] -
-      statusOrder[right.anilistEntry.status]
+      statusOrder[left.entry.status] - statusOrder[right.entry.status]
 
     if (statusDelta !== 0) {
       return statusDelta
     }
 
-    return (left.anilistEntry.media.title.romaji ?? "").localeCompare(
-      right.anilistEntry.media.title.romaji ?? ""
+    return (left.entry.media.title.primary ?? "").localeCompare(
+      right.entry.media.title.primary ?? ""
     )
   })
 }
 
 export function buildOverlapResults(
-  aniListEntries: AniListEntry[],
+  entries: AnimeEntry[],
   jimakuEntries: JimakuEntry[],
   jpdbEntries: JpdbAnimeDifficultyEntry[],
   learnNativelyEntries: LearnNativelyAnimationLevelEntry[]
 ) {
   const results: OverlapResult[] = []
 
-  for (const anilistEntry of aniListEntries) {
-    const matched = matchAnime(anilistEntry, jimakuEntries)
+  for (const entry of entries) {
+    const matched = matchAnime(entry, jimakuEntries)
 
     if (!matched) {
       continue
     }
 
-    const matchedJpdb = matchJpdbAnimeDifficulty(anilistEntry, jpdbEntries)
+    const matchedJpdb = matchJpdbAnimeDifficulty(entry, jpdbEntries)
     const matchedLearnNativelyBase = matchLearnNativelyAnimationLevel(
-      anilistEntry,
+      entry,
       learnNativelyEntries
     )
     const learnNativelyJlptEquivalent = matchedLearnNativelyBase
@@ -92,17 +93,14 @@ export function buildOverlapResults(
         : undefined
 
     results.push({
-      anilistEntry,
+      entry,
       matchedJimaku: matched.matchedJimaku,
       alternates: matched.alternates,
       matchScore: matched.matchScore,
       matchReason: matched.matchReason,
       isAmbiguous: matched.isAmbiguous,
       isLowConfidence: matched.isLowConfidence,
-      completeness: getCompleteness(
-        anilistEntry,
-        matched.matchedJimaku.fileCount
-      ),
+      completeness: getCompleteness(entry, matched.matchedJimaku.fileCount),
       matchedJpdb: matchedJpdb ?? undefined,
       matchedLearnNatively,
     })
@@ -111,7 +109,16 @@ export function buildOverlapResults(
   return results
 }
 
-export async function findOverlap(username: string): Promise<LookupResponse> {
+async function fetchSourceEntries(source: AnimeSource, username: string) {
+  return source === "myanimelist"
+    ? fetchMyAnimeListEntries(username)
+    : fetchAniListEntries(username)
+}
+
+export async function findOverlap(
+  source: AnimeSource,
+  username: string
+): Promise<LookupResponse> {
   const trimmedUsername = username.trim()
   const fetchedAt = new Date().toISOString()
 
@@ -119,31 +126,31 @@ export async function findOverlap(username: string): Promise<LookupResponse> {
     return {
       ok: false,
       code: "UPSTREAM_ERROR",
-      message: "Enter an AniList username.",
+      message: "Enter a username.",
     }
   }
 
-  const cachedResponse = await readCachedLookupResponse(trimmedUsername)
+  const cachedResponse = await readCachedLookupResponse(source, trimmedUsername)
 
   if (cachedResponse) {
     return cachedResponse
   }
 
-  const [aniListResult, jimakuEntries, jpdbEntries, learnNativelyEntries] =
+  const [entryResult, jimakuEntries, jpdbEntries, learnNativelyEntries] =
     await Promise.all([
-      fetchAniListEntries(trimmedUsername),
+      fetchSourceEntries(source, trimmedUsername),
       loadJimakuSnapshot(),
       loadJpdbAnimeDifficultySnapshot(),
       loadLearnNativelyAnimationLevelsSnapshot(),
     ])
 
-  if (!Array.isArray(aniListResult)) {
-    await writeCachedLookupResponse(trimmedUsername, aniListResult)
-    return aniListResult
+  if (!Array.isArray(entryResult)) {
+    await writeCachedLookupResponse(source, trimmedUsername, entryResult)
+    return entryResult
   }
 
   const results = buildOverlapResults(
-    aniListResult,
+    entryResult,
     jimakuEntries,
     jpdbEntries,
     learnNativelyEntries
@@ -151,14 +158,15 @@ export async function findOverlap(username: string): Promise<LookupResponse> {
 
   const response = {
     ok: true,
+    source,
     username: trimmedUsername,
     fetchedAt,
-    totalAnime: aniListResult.length,
+    totalAnime: entryResult.length,
     matchedCount: results.length,
     results: sortResults(results),
   } satisfies LookupResponse
 
-  await writeCachedLookupResponse(trimmedUsername, response)
+  await writeCachedLookupResponse(source, trimmedUsername, response)
 
   return response
 }

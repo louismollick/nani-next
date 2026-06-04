@@ -1,6 +1,6 @@
 import { normalizeTitle, titleTokens, uniqStrings } from "@/lib/normalize"
 import type {
-  AniListEntry,
+  AnimeEntry,
   DatasetMatch,
   JimakuEntry,
   JpdbAnimeDifficultyEntry,
@@ -44,21 +44,19 @@ type TitleMatcherResult<TEntry> = {
 
 type TitleMatcherOptions<TEntry> = {
   entries: TEntry[]
-  getAniListId?: (entry: TEntry) => number | null
   getTitles: (entry: TEntry) => string[]
 }
 
-const matcherCache = new WeakMap<
-  JimakuEntry[],
-  (entry: AniListEntry) => {
-    matchedJimaku: JimakuEntry
-    alternates: MatchCandidate[]
-    matchScore: number
-    matchReason: MatchReason
-    isAmbiguous: boolean
-    isLowConfidence: boolean
-  } | null
->()
+type AnimeMatcher = (entry: AnimeEntry) => {
+  matchedJimaku: JimakuEntry
+  alternates: MatchCandidate[]
+  matchScore: number
+  matchReason: MatchReason
+  isAmbiguous: boolean
+  isLowConfidence: boolean
+} | null
+
+const matcherCache = new WeakMap<JimakuEntry[], AnimeMatcher>()
 const datasetMatcherCache = new WeakMap<object, unknown>()
 
 function bigramsFromNormalized(normalized: string) {
@@ -123,9 +121,9 @@ function strongestTokenOverlap(left: PreparedTitle, right: PreparedTitle) {
   return tokenOverlap(left.tokens, right.tokens)
 }
 
-export function getAniListTitles(entry: AniListEntry) {
+export function getEntryTitles(entry: AnimeEntry) {
   return uniqStrings([
-    entry.media.title.romaji,
+    entry.media.title.primary,
     entry.media.title.english,
     entry.media.title.native,
     ...entry.media.synonyms,
@@ -152,20 +150,12 @@ function buildTitleMatch<TEntry>(
 
 function buildDatasetMatcher<TEntry>({
   entries,
-  getAniListId,
   getTitles,
 }: TitleMatcherOptions<TEntry>) {
-  const idMap = new Map<number, TEntry>()
   const normalizedTitleMap = new Map<string, TEntry[]>()
   const tokenIndex = new Map<string, Set<number>>()
   const preparedEntries: PreparedDatasetEntry<TEntry>[] = entries.map(
     (entry, index) => {
-      const aniListId = getAniListId?.(entry)
-
-      if (aniListId) {
-        idMap.set(aniListId, entry)
-      }
-
       const titles = uniqStrings(getTitles(entry))
       const normalizedTitles = titles.map(normalizeTitle).filter(Boolean)
 
@@ -196,19 +186,11 @@ function buildDatasetMatcher<TEntry>({
     }
   )
 
-  return (entry: AniListEntry) => {
-    if (entry.media.id) {
-      const byId = idMap.get(entry.media.id)
-
-      if (byId) {
-        return buildTitleMatch(byId, [], 1, "anilist-id", false, false)
-      }
-    }
-
-    const aniListTitles = getAniListTitles(entry)
-    const preparedAniListTitles = aniListTitles.map(prepareTitle)
+  return (entry: AnimeEntry) => {
+    const entryTitles = getEntryTitles(entry)
+    const preparedEntryTitles = entryTitles.map(prepareTitle)
     const normalizedTitles = new Set(
-      preparedAniListTitles.map((title) => title.normalized)
+      preparedEntryTitles.map((title) => title.normalized)
     )
 
     for (const normalizedTitle of normalizedTitles) {
@@ -226,18 +208,17 @@ function buildDatasetMatcher<TEntry>({
       }
     }
 
-    const hasMultiTokenAniListTitle = preparedAniListTitles.some(
+    const hasMultiTokenTitle = preparedEntryTitles.some(
       (title) => title.tokens.size > 1
     )
 
-    if (!hasMultiTokenAniListTitle) {
+    if (!hasMultiTokenTitle) {
       return null
     }
 
-    // Use the AniList title tokens to avoid scoring the full Jimaku catalog.
     const candidateIndexes = new Set<number>()
 
-    for (const preparedTitle of preparedAniListTitles) {
+    for (const preparedTitle of preparedEntryTitles) {
       for (const token of preparedTitle.tokens) {
         const matches = tokenIndex.get(token)
 
@@ -257,15 +238,15 @@ function buildDatasetMatcher<TEntry>({
           let score = 0
           let tokenScore = 0
 
-          for (const aniListTitle of preparedAniListTitles) {
+          for (const entryTitle of preparedEntryTitles) {
             for (const candidateTitle of matchedEntry.preparedTitles) {
               score = Math.max(
                 score,
-                titleSimilarity(aniListTitle, candidateTitle)
+                titleSimilarity(entryTitle, candidateTitle)
               )
               tokenScore = Math.max(
                 tokenScore,
-                strongestTokenOverlap(aniListTitle, candidateTitle)
+                strongestTokenOverlap(entryTitle, candidateTitle)
               )
             }
           }
@@ -281,15 +262,15 @@ function buildDatasetMatcher<TEntry>({
           let score = 0
           let tokenScore = 0
 
-          for (const aniListTitle of preparedAniListTitles) {
+          for (const entryTitle of preparedEntryTitles) {
             for (const candidateTitle of matchedEntry.preparedTitles) {
               score = Math.max(
                 score,
-                titleSimilarity(aniListTitle, candidateTitle)
+                titleSimilarity(entryTitle, candidateTitle)
               )
               tokenScore = Math.max(
                 tokenScore,
-                strongestTokenOverlap(aniListTitle, candidateTitle)
+                strongestTokenOverlap(entryTitle, candidateTitle)
               )
             }
           }
@@ -339,15 +320,57 @@ function buildDatasetMatcher<TEntry>({
   }
 }
 
-function buildMatcher(jimakuEntries: JimakuEntry[]) {
-  const matcher = buildDatasetMatcher({
+function buildAnimeMatcher(jimakuEntries: JimakuEntry[]): AnimeMatcher {
+  const byAniListId = new Map<number, JimakuEntry>()
+  const byMyAnimeListId = new Map<number, JimakuEntry>()
+
+  for (const jimakuEntry of jimakuEntries) {
+    if (jimakuEntry.anilistId !== null) {
+      byAniListId.set(jimakuEntry.anilistId, jimakuEntry)
+    }
+
+    if (jimakuEntry.myanimelistId !== null) {
+      byMyAnimeListId.set(jimakuEntry.myanimelistId, jimakuEntry)
+    }
+  }
+
+  const titleMatcher = buildDatasetMatcher({
     entries: jimakuEntries,
-    getAniListId: (entry) => entry.anilistId,
     getTitles: (entry) => entry.titles,
   })
 
-  return (entry: AniListEntry) => {
-    const matched = matcher(entry)
+  return (entry) => {
+    if (entry.media.anilistId !== null) {
+      const matchedJimaku = byAniListId.get(entry.media.anilistId)
+
+      if (matchedJimaku) {
+        return {
+          matchedJimaku,
+          alternates: [],
+          matchScore: 1,
+          matchReason: "anilist-id",
+          isAmbiguous: false,
+          isLowConfidence: false,
+        }
+      }
+    }
+
+    if (entry.media.myanimelistId !== null) {
+      const matchedJimaku = byMyAnimeListId.get(entry.media.myanimelistId)
+
+      if (matchedJimaku) {
+        return {
+          matchedJimaku,
+          alternates: [],
+          matchScore: 1,
+          matchReason: "myanimelist-id",
+          isAmbiguous: false,
+          isLowConfidence: false,
+        }
+      }
+    }
+
+    const matched = titleMatcher(entry)
 
     if (!matched) {
       return null
@@ -373,7 +396,7 @@ function getCachedDatasetMatcher<TEntry>(
   getTitles: (entry: TEntry) => string[]
 ) {
   let matcher = datasetMatcherCache.get(entries) as
-    | ((entry: AniListEntry) => TitleMatcherResult<TEntry> | null)
+    | ((entry: AnimeEntry) => TitleMatcherResult<TEntry> | null)
     | undefined
 
   if (!matcher) {
@@ -402,11 +425,11 @@ function toDatasetMatch<TEntry>(
   }
 }
 
-export function matchAnime(entry: AniListEntry, jimakuEntries: JimakuEntry[]) {
+export function matchAnime(entry: AnimeEntry, jimakuEntries: JimakuEntry[]) {
   let matcher = matcherCache.get(jimakuEntries)
 
   if (!matcher) {
-    matcher = buildMatcher(jimakuEntries)
+    matcher = buildAnimeMatcher(jimakuEntries)
     matcherCache.set(jimakuEntries, matcher)
   }
 
@@ -414,7 +437,7 @@ export function matchAnime(entry: AniListEntry, jimakuEntries: JimakuEntry[]) {
 }
 
 export function matchJpdbAnimeDifficulty(
-  entry: AniListEntry,
+  entry: AnimeEntry,
   jpdbEntries: JpdbAnimeDifficultyEntry[]
 ) {
   return toDatasetMatch(
@@ -423,7 +446,7 @@ export function matchJpdbAnimeDifficulty(
 }
 
 export function matchLearnNativelyAnimationLevel(
-  entry: AniListEntry,
+  entry: AnimeEntry,
   learnNativelyEntries: LearnNativelyAnimationLevelEntry[]
 ) {
   return toDatasetMatch(

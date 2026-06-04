@@ -9,7 +9,7 @@ import {
   TriangleAlert,
 } from "lucide-react"
 import type { FormEvent, ReactNode } from "react"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -38,32 +38,48 @@ import {
 } from "@/components/ui/tooltip"
 import { successLookupTtlSeconds } from "@/lib/lookup-cache"
 import {
+  defaultLookupSearchState,
+  getLookupIdentity,
+  type LookupSearchState,
+  type NumericRange,
+  serializeGenreValues,
+  serializeSelectedValues,
+} from "@/lib/search-state"
+import {
   mediaStatusLabel,
   statusDotClassName,
   statusLabel,
   statusOrder,
 } from "@/lib/status"
 import {
-  type AniListMediaStatus,
-  anilistMediaStatuses,
-  anilistWatchStatuses,
+  type AnimeEntry,
+  type AnimeSource,
+  animeSources,
   type DifficultyFilterMode,
   difficultyFilterModes,
   type LearnNativelyJlptEquivalent,
   type LookupResponse,
   learnNativelyJlptEquivalents,
+  type MediaStatus,
+  mediaStatuses,
   type OverlapResult,
   type SortOption,
   sortOptions,
+  type WatchStatus,
+  watchStatuses,
 } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
 type AnimeOverlapPageProps = {
-  initialUsername?: string
-  lookup: (input: { data: { username: string } }) => Promise<LookupResponse>
+  autoLookupIdentity?: string | null
+  lookup: (input: {
+    data: { source: AnimeSource; username: string }
+  }) => Promise<LookupResponse>
+  onSearchStateChange?: (
+    updater: (previousState: LookupSearchState) => LookupSearchState
+  ) => void
+  searchState?: LookupSearchState
 }
-
-type NumericRange = [number, number]
 
 const relativeTimeFormatter = new Intl.RelativeTimeFormat(undefined, {
   numeric: "auto",
@@ -167,6 +183,18 @@ function normalizeRange(
   ] as NumericRange
 }
 
+function rangesEqual(left: NumericRange | null, right: NumericRange | null) {
+  if (!left && !right) {
+    return true
+  }
+
+  if (!left || !right) {
+    return false
+  }
+
+  return left[0] === right[0] && left[1] === right[1]
+}
+
 function getLearnNativelyJlptEquivalentIndex(
   equivalent: LearnNativelyJlptEquivalent
 ) {
@@ -191,7 +219,7 @@ function formatDifficultyRangeValue(mode: DifficultyFilterMode, value: number) {
   return String(value)
 }
 
-function getMediaStatusLabel(status: AniListMediaStatus) {
+function getMediaStatusLabel(status: MediaStatus) {
   return status ? mediaStatusLabel[status] : "Unknown"
 }
 
@@ -210,7 +238,7 @@ function LookupFreshness({ fetchedAt }: { fetchedAt: string }) {
     <Tooltip>
       <TooltipTrigger asChild>
         <button
-          aria-label="AniList fetch details"
+          aria-label="Fetch details"
           className="inline-flex items-center gap-1.5 text-slate-400 underline decoration-slate-700 underline-offset-4 hover:text-slate-300"
           type="button"
         >
@@ -221,12 +249,20 @@ function LookupFreshness({ fetchedAt }: { fetchedAt: string }) {
       <TooltipContent className="max-w-64 text-left leading-5">
         <p>{formatAbsoluteFetchedAt(fetchedAt)}</p>
         <p>
-          AniList lookups are cached per user for{" "}
-          {successLookupTtlSeconds / 60 / 60} hour.
+          Lookups are cached per user for {successLookupTtlSeconds / 60 / 60}{" "}
+          hour.
         </p>
       </TooltipContent>
     </Tooltip>
   )
+}
+
+function getSourceLabel(source: AnimeSource) {
+  return source === "myanimelist" ? "MyAnimeList" : "AniList"
+}
+
+function getEntryTitle(entry: AnimeEntry) {
+  return entry.media.title.primary ?? entry.media.title.english ?? "Unknown"
 }
 
 function sortResults(results: OverlapResult[], sortBy: SortOption) {
@@ -235,29 +271,26 @@ function sortResults(results: OverlapResult[], sortBy: SortOption) {
   nextResults.sort((left, right) => {
     if (sortBy === "averageScore") {
       return (
-        (right.anilistEntry.media.averageScore ?? -1) -
-        (left.anilistEntry.media.averageScore ?? -1)
+        (right.entry.media.averageScore ?? -1) -
+        (left.entry.media.averageScore ?? -1)
       )
     }
 
     if (sortBy === "popularity") {
       return (
-        (right.anilistEntry.media.popularity ?? -1) -
-        (left.anilistEntry.media.popularity ?? -1)
+        (right.entry.media.popularity ?? -1) -
+        (left.entry.media.popularity ?? -1)
       )
     }
 
     const statusDelta =
-      statusOrder[left.anilistEntry.status] -
-      statusOrder[right.anilistEntry.status]
+      statusOrder[left.entry.status] - statusOrder[right.entry.status]
 
     if (statusDelta !== 0) {
       return statusDelta
     }
 
-    return (left.anilistEntry.media.title.romaji ?? "").localeCompare(
-      right.anilistEntry.media.title.romaji ?? ""
-    )
+    return getEntryTitle(left.entry).localeCompare(getEntryTitle(right.entry))
   })
 
   return nextResults
@@ -268,15 +301,15 @@ function StatusDot({ result }: { result: OverlapResult }) {
     <Tooltip>
       <TooltipTrigger asChild>
         <span
-          aria-label={statusLabel[result.anilistEntry.status]}
+          aria-label={statusLabel[result.entry.status]}
           className={cn(
             "mt-1 size-2.5 shrink-0 self-start rounded-full shadow-[0_0_0_3px_rgba(7,15,28,0.55)]",
-            statusDotClassName[result.anilistEntry.status]
+            statusDotClassName[result.entry.status]
           )}
           role="img"
         />
       </TooltipTrigger>
-      <TooltipContent>{statusLabel[result.anilistEntry.status]}</TooltipContent>
+      <TooltipContent>{statusLabel[result.entry.status]}</TooltipContent>
     </Tooltip>
   )
 }
@@ -384,12 +417,9 @@ function ResultCard({
           <div className="space-y-3 transition duration-200 group-hover:-translate-y-1">
             <div className="relative aspect-[3/4] overflow-hidden rounded bg-slate-950 shadow-[0_18px_40px_-30px_rgba(0,0,0,0.95)]">
               <img
-                alt={
-                  result.anilistEntry.media.title.romaji ??
-                  result.matchedJimaku.name
-                }
+                alt={getEntryTitle(result.entry) ?? result.matchedJimaku.name}
                 className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
-                src={result.anilistEntry.media.coverImage.large}
+                src={result.entry.media.coverImage.large}
               />
               <DifficultyBadges result={result} />
             </div>
@@ -398,8 +428,7 @@ function ResultCard({
                 <StatusDot result={result} />
                 <div className="min-w-0 flex-1 space-y-1">
                   <h3 className="line-clamp-2 h-10 text-sm font-medium leading-5 text-slate-400">
-                    {result.anilistEntry.media.title.romaji ??
-                      result.matchedJimaku.name}
+                    {getEntryTitle(result.entry) ?? result.matchedJimaku.name}
                   </h3>
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">
@@ -431,7 +460,7 @@ function ResultCard({
                 Episodes
               </p>
               <p className="mt-1 font-medium">
-                {result.anilistEntry.media.episodes ?? "Unknown"}
+                {result.entry.media.episodes ?? "Unknown"}
               </p>
             </div>
             <div>
@@ -473,7 +502,7 @@ function ResultCard({
               Airing Status
             </p>
             <p className="mt-1 font-medium text-slate-200">
-              {getMediaStatusLabel(result.anilistEntry.media.status)}
+              {getMediaStatusLabel(result.entry.media.status)}
             </p>
           </div>
           <div>
@@ -481,8 +510,8 @@ function ResultCard({
               Genres
             </p>
             <div className="mt-2 flex flex-wrap gap-1.5">
-              {result.anilistEntry.media.genres.length > 0 ? (
-                result.anilistEntry.media.genres.map((genre) => (
+              {result.entry.media.genres.length > 0 ? (
+                result.entry.media.genres.map((genre) => (
                   <span
                     className="rounded-full bg-slate-800 px-2.5 py-1 text-xs text-slate-200"
                     key={genre}
@@ -517,26 +546,22 @@ function ResultDialog({
           <>
             <DialogHeader>
               <DialogTitle className="pr-8 text-2xl text-slate-100">
-                {result.anilistEntry.media.title.romaji ??
-                  result.matchedJimaku.name}
+                {getEntryTitle(result.entry) ?? result.matchedJimaku.name}
               </DialogTitle>
             </DialogHeader>
             <div className="grid gap-6 md:grid-cols-[180px_minmax(0,1fr)]">
               <div>
                 <img
-                  alt={
-                    result.anilistEntry.media.title.romaji ??
-                    result.matchedJimaku.name
-                  }
+                  alt={getEntryTitle(result.entry) ?? result.matchedJimaku.name}
                   className="aspect-[3/4] w-full rounded-2xl object-cover shadow-lg"
-                  src={result.anilistEntry.media.coverImage.large}
+                  src={result.entry.media.coverImage.large}
                 />
               </div>
               <div className="space-y-5">
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="inline-flex items-center gap-2 rounded-full border border-slate-800 bg-slate-900/70 px-3 py-1 text-sm text-slate-200">
                     <StatusDot result={result} />
-                    <span>{statusLabel[result.anilistEntry.status]}</span>
+                    <span>{statusLabel[result.entry.status]}</span>
                   </div>
                   {result.isLowConfidence ? (
                     <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-400/10 px-3 py-1 text-sm text-amber-200">
@@ -558,16 +583,16 @@ function ResultDialog({
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                        AniList
+                        {getSourceLabel(result.entry.source)}
                       </p>
                       <p className="text-sm font-medium text-slate-100">
-                        {result.anilistEntry.media.title.romaji ?? "Unknown"}
+                        {getEntryTitle(result.entry)}
                       </p>
                     </div>
                     <Button asChild size="sm" variant="outline">
                       <a
                         className="border-slate-700 bg-slate-950 text-slate-100 hover:bg-slate-900"
-                        href={result.anilistEntry.media.siteUrl}
+                        href={result.entry.media.siteUrl}
                         rel="noreferrer"
                         target="_blank"
                       >
@@ -604,7 +629,7 @@ function ResultDialog({
                       Episodes
                     </p>
                     <p className="mt-2 text-lg font-semibold text-slate-100">
-                      {result.anilistEntry.media.episodes ?? "Unknown"}
+                      {result.entry.media.episodes ?? "Unknown"}
                     </p>
                   </div>
                   <div>
@@ -801,42 +826,70 @@ function ResultDialog({
 }
 
 export function AnimeOverlapPage({
-  initialUsername = "",
+  autoLookupIdentity = null,
   lookup,
+  onSearchStateChange,
+  searchState,
 }: AnimeOverlapPageProps) {
   const lookupFn = useServerFn(lookup)
-  const [username, setUsername] = useState(initialUsername)
-  const [selectedStatuses, setSelectedStatuses] = useState(
-    new Set(anilistWatchStatuses)
+  const [localSearchState, setLocalSearchState] = useState(
+    defaultLookupSearchState
   )
-  const [selectedMediaStatuses, setSelectedMediaStatuses] = useState(
-    new Set<Exclude<AniListMediaStatus, null>>(anilistMediaStatuses)
-  )
-  const [selectedGenres, setSelectedGenres] = useState(new Set<string>())
-  const [hideIncomplete, setHideIncomplete] = useState(false)
-  const [hideLowConfidence, setHideLowConfidence] = useState(false)
-  const [difficultyFilterMode, setDifficultyFilterMode] =
-    useState<DifficultyFilterMode>("none")
-  const [jpdbDifficultyRange, setJpdbDifficultyRange] =
-    useState<NumericRange | null>(null)
-  const [learnNativelyLevelRange, setLearnNativelyLevelRange] =
-    useState<NumericRange | null>(null)
-  const [learnNativelyJlptRange, setLearnNativelyJlptRange] =
-    useState<NumericRange | null>(null)
-  const [sortBy, setSortBy] = useState<SortOption>("status")
   const [lookupState, setLookupState] = useState<LookupResponse | null>(null)
   const [isPending, setIsPending] = useState(false)
   const [selectedResult, setSelectedResult] = useState<OverlapResult | null>(
     null
+  )
+  const autoLookupPerformedRef = useRef(false)
+
+  const activeSearchState = searchState ?? localSearchState
+  const selectedStatuses = new Set(activeSearchState.selectedStatuses)
+  const selectedMediaStatuses = new Set(activeSearchState.selectedMediaStatuses)
+  const selectedGenres = new Set(activeSearchState.selectedGenres)
+
+  const updateSearchState = useCallback(
+    (updater: (previousState: LookupSearchState) => LookupSearchState) => {
+      if (onSearchStateChange) {
+        onSearchStateChange(updater)
+        return
+      }
+
+      setLocalSearchState(updater)
+    },
+    [onSearchStateChange]
+  )
+
+  const runLookup = useCallback(
+    async (source: AnimeSource, username: string) => {
+      const nextUsername = username.trim()
+
+      if (!nextUsername) {
+        setLookupState({
+          ok: false,
+          code: "UPSTREAM_ERROR",
+          message: "Enter a username.",
+        })
+        return
+      }
+
+      setIsPending(true)
+
+      try {
+        setLookupState(
+          await lookupFn({ data: { source, username: nextUsername } })
+        )
+      } finally {
+        setIsPending(false)
+      }
+    },
+    [lookupFn]
   )
 
   const hasResultsState = lookupState?.ok === true
   const availableGenres = lookupState?.ok
     ? [
         ...new Set(
-          lookupState.results.flatMap(
-            (result) => result.anilistEntry.media.genres
-          )
+          lookupState.results.flatMap((result) => result.entry.media.genres)
         ),
       ].sort((left, right) => left.localeCompare(right))
     : []
@@ -863,15 +916,44 @@ export function AnimeOverlapPage({
     : null
 
   useEffect(() => {
-    setJpdbDifficultyRange((current) =>
-      normalizeRange(current, availableJpdbDifficultyBounds)
-    )
-    setLearnNativelyLevelRange((current) =>
-      normalizeRange(current, availableLearnNativelyLevelBounds)
-    )
-    setLearnNativelyJlptRange((current) =>
-      normalizeRange(current, availableLearnNativelyJlptBounds)
-    )
+    updateSearchState((previousState) => {
+      const nextJpdbDifficultyRange = normalizeRange(
+        previousState.jpdbDifficultyRange,
+        availableJpdbDifficultyBounds
+      )
+      const nextLearnNativelyLevelRange = normalizeRange(
+        previousState.learnNativelyLevelRange,
+        availableLearnNativelyLevelBounds
+      )
+      const nextLearnNativelyJlptRange = normalizeRange(
+        previousState.learnNativelyJlptRange,
+        availableLearnNativelyJlptBounds
+      )
+
+      if (
+        rangesEqual(
+          previousState.jpdbDifficultyRange,
+          nextJpdbDifficultyRange
+        ) &&
+        rangesEqual(
+          previousState.learnNativelyLevelRange,
+          nextLearnNativelyLevelRange
+        ) &&
+        rangesEqual(
+          previousState.learnNativelyJlptRange,
+          nextLearnNativelyJlptRange
+        )
+      ) {
+        return previousState
+      }
+
+      return {
+        ...previousState,
+        jpdbDifficultyRange: nextJpdbDifficultyRange,
+        learnNativelyLevelRange: nextLearnNativelyLevelRange,
+        learnNativelyJlptRange: nextLearnNativelyJlptRange,
+      }
+    })
   }, [
     availableJpdbDifficultyBounds?.[0],
     availableJpdbDifficultyBounds?.[1],
@@ -879,84 +961,121 @@ export function AnimeOverlapPage({
     availableLearnNativelyLevelBounds?.[1],
     availableLearnNativelyJlptBounds?.[0],
     availableLearnNativelyJlptBounds?.[1],
+    updateSearchState,
   ])
 
   const activeDifficultyBounds =
-    difficultyFilterMode === "jpdbAverageDifficulty"
+    activeSearchState.difficultyFilterMode === "jpdbAverageDifficulty"
       ? availableJpdbDifficultyBounds
-      : difficultyFilterMode === "learnNativelyLevel"
+      : activeSearchState.difficultyFilterMode === "learnNativelyLevel"
         ? availableLearnNativelyLevelBounds
-        : difficultyFilterMode === "learnNativelyJlptEquivalent"
+        : activeSearchState.difficultyFilterMode ===
+            "learnNativelyJlptEquivalent"
           ? availableLearnNativelyJlptBounds
           : null
   const activeDifficultyRange =
-    difficultyFilterMode === "jpdbAverageDifficulty"
-      ? jpdbDifficultyRange
-      : difficultyFilterMode === "learnNativelyLevel"
-        ? learnNativelyLevelRange
-        : difficultyFilterMode === "learnNativelyJlptEquivalent"
-          ? learnNativelyJlptRange
+    activeSearchState.difficultyFilterMode === "jpdbAverageDifficulty"
+      ? activeSearchState.jpdbDifficultyRange
+      : activeSearchState.difficultyFilterMode === "learnNativelyLevel"
+        ? activeSearchState.learnNativelyLevelRange
+        : activeSearchState.difficultyFilterMode ===
+            "learnNativelyJlptEquivalent"
+          ? activeSearchState.learnNativelyJlptRange
           : null
+  const activeLookupIdentity = getLookupIdentity(activeSearchState)
+
+  useEffect(() => {
+    if (autoLookupPerformedRef.current || !autoLookupIdentity) {
+      return
+    }
+
+    if (activeLookupIdentity !== autoLookupIdentity) {
+      return
+    }
+
+    autoLookupPerformedRef.current = true
+    void runLookup(activeSearchState.source, activeSearchState.username)
+  }, [
+    activeLookupIdentity,
+    activeSearchState.source,
+    activeSearchState.username,
+    autoLookupIdentity,
+    runLookup,
+  ])
 
   const visibleResults = lookupState?.ok
     ? sortResults(
         lookupState.results.filter((result) => {
-          if (!selectedStatuses.has(result.anilistEntry.status)) {
+          if (!selectedStatuses.has(result.entry.status)) {
             return false
           }
 
           if (
-            result.anilistEntry.media.status &&
-            !selectedMediaStatuses.has(result.anilistEntry.media.status)
+            result.entry.media.status &&
+            !selectedMediaStatuses.has(result.entry.media.status)
           ) {
             return false
           }
 
           if (
             selectedGenres.size > 0 &&
-            !result.anilistEntry.media.genres.some((genre) =>
+            !result.entry.media.genres.some((genre) =>
               selectedGenres.has(genre)
             )
           ) {
             return false
           }
 
-          if (hideIncomplete && result.completeness === "incomplete") {
+          if (
+            activeSearchState.hideIncomplete &&
+            result.completeness === "incomplete"
+          ) {
             return false
           }
 
-          if (hideLowConfidence && result.isLowConfidence) {
+          if (activeSearchState.hideLowConfidence && result.isLowConfidence) {
             return false
           }
 
-          if (difficultyFilterMode === "jpdbAverageDifficulty") {
-            if (!result.matchedJpdb || !jpdbDifficultyRange) {
+          if (
+            activeSearchState.difficultyFilterMode === "jpdbAverageDifficulty"
+          ) {
+            if (!result.matchedJpdb || !activeSearchState.jpdbDifficultyRange) {
               return false
             }
 
             return (
               result.matchedJpdb.entry.averageDifficulty >=
-                jpdbDifficultyRange[0] &&
+                activeSearchState.jpdbDifficultyRange[0] &&
               result.matchedJpdb.entry.averageDifficulty <=
-                jpdbDifficultyRange[1]
+                activeSearchState.jpdbDifficultyRange[1]
             )
           }
 
-          if (difficultyFilterMode === "learnNativelyLevel") {
-            if (!result.matchedLearnNatively || !learnNativelyLevelRange) {
+          if (activeSearchState.difficultyFilterMode === "learnNativelyLevel") {
+            if (
+              !result.matchedLearnNatively ||
+              !activeSearchState.learnNativelyLevelRange
+            ) {
               return false
             }
 
             return (
               result.matchedLearnNatively.levelNumber >=
-                learnNativelyLevelRange[0] &&
+                activeSearchState.learnNativelyLevelRange[0] &&
               result.matchedLearnNatively.levelNumber <=
-                learnNativelyLevelRange[1]
+                activeSearchState.learnNativelyLevelRange[1]
             )
           }
 
-          if (difficultyFilterMode === "learnNativelyJlptEquivalent") {
-            if (!result.matchedLearnNatively || !learnNativelyJlptRange) {
+          if (
+            activeSearchState.difficultyFilterMode ===
+            "learnNativelyJlptEquivalent"
+          ) {
+            if (
+              !result.matchedLearnNatively ||
+              !activeSearchState.learnNativelyJlptRange
+            ) {
               return false
             }
 
@@ -965,37 +1084,20 @@ export function AnimeOverlapPage({
             )
 
             return (
-              equivalentIndex >= learnNativelyJlptRange[0] &&
-              equivalentIndex <= learnNativelyJlptRange[1]
+              equivalentIndex >= activeSearchState.learnNativelyJlptRange[0] &&
+              equivalentIndex <= activeSearchState.learnNativelyJlptRange[1]
             )
           }
 
           return true
         }),
-        sortBy
+        activeSearchState.sortBy
       )
     : []
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    const nextUsername = username.trim()
-
-    if (!nextUsername) {
-      setLookupState({
-        ok: false,
-        code: "UPSTREAM_ERROR",
-        message: "Enter an AniList username.",
-      })
-      return
-    }
-
-    setIsPending(true)
-
-    try {
-      setLookupState(await lookupFn({ data: { username: nextUsername } }))
-    } finally {
-      setIsPending(false)
-    }
+    await runLookup(activeSearchState.source, activeSearchState.username)
   }
 
   return (
@@ -1014,19 +1116,47 @@ export function AnimeOverlapPage({
             )}
           >
             <h1 className="text-4xl font-semibold tracking-tight text-slate-50 sm:text-5xl">
-              AniList x Jimaku overlap finder
+              Anime List x Jimaku overlap finder
             </h1>
             <form
               className="mx-auto flex max-w-2xl flex-col gap-3 sm:flex-row"
               onSubmit={handleSubmit}
             >
+              <Select
+                onValueChange={(value) =>
+                  updateSearchState((previousState) => ({
+                    ...previousState,
+                    source: value as AnimeSource,
+                  }))
+                }
+                value={activeSearchState.source}
+              >
+                <SelectTrigger
+                  aria-label="Source"
+                  className="h-12 w-full rounded border-slate-800 bg-slate-900 text-base text-slate-100 shadow-[0_18px_50px_-34px_rgba(0,0,0,0.9)] sm:w-44"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded border-slate-800 bg-slate-950 text-slate-100">
+                  {animeSources.map((source) => (
+                    <SelectItem key={source} value={source}>
+                      {getSourceLabel(source)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <div className="relative flex-1">
                 <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
                 <Input
                   className="h-12 rounded border-slate-800 bg-slate-900 pl-11 text-base text-slate-100 shadow-[0_18px_50px_-34px_rgba(0,0,0,0.9)] placeholder:text-slate-500"
-                  onChange={(event) => setUsername(event.target.value)}
-                  placeholder="Enter AniList username"
-                  value={username}
+                  onChange={(event) =>
+                    updateSearchState((previousState) => ({
+                      ...previousState,
+                      username: event.target.value,
+                    }))
+                  }
+                  placeholder="Enter username"
+                  value={activeSearchState.username}
                 />
               </div>
               <Button
@@ -1060,7 +1190,7 @@ export function AnimeOverlapPage({
                 </span>
                 <span>{lookupState.matchedCount} matches</span>
                 <span className="flex flex-wrap items-center justify-center gap-1.5">
-                  <span>{lookupState.totalAnime} AniList entries scanned</span>
+                  <span>{lookupState.totalAnime} entries scanned</span>
                   <span aria-hidden="true">•</span>
                   <LookupFreshness fetchedAt={lookupState.fetchedAt} />
                 </span>
@@ -1082,13 +1212,15 @@ export function AnimeOverlapPage({
                   <MultiSelectCombobox
                     ariaLabel="Watch status"
                     onSelectedValuesChange={(nextSelectedValues) =>
-                      setSelectedStatuses(
-                        nextSelectedValues as Set<
-                          (typeof anilistWatchStatuses)[number]
-                        >
-                      )
+                      updateSearchState((previousState) => ({
+                        ...previousState,
+                        selectedStatuses: serializeSelectedValues(
+                          nextSelectedValues as Set<WatchStatus>,
+                          watchStatuses
+                        ),
+                      }))
                     }
-                    options={anilistWatchStatuses.map((status) => ({
+                    options={watchStatuses.map((status) => ({
                       label: statusLabel[status],
                       value: status,
                     }))}
@@ -1106,13 +1238,15 @@ export function AnimeOverlapPage({
                   <MultiSelectCombobox
                     ariaLabel="Airing status"
                     onSelectedValuesChange={(nextSelectedValues) =>
-                      setSelectedMediaStatuses(
-                        nextSelectedValues as Set<
-                          Exclude<AniListMediaStatus, null>
-                        >
-                      )
+                      updateSearchState((previousState) => ({
+                        ...previousState,
+                        selectedMediaStatuses: serializeSelectedValues(
+                          nextSelectedValues as Set<Exclude<MediaStatus, null>>,
+                          mediaStatuses
+                        ),
+                      }))
                     }
-                    options={anilistMediaStatuses.map((status) => ({
+                    options={mediaStatuses.map((status) => ({
                       label: mediaStatusLabel[status],
                       value: status,
                     }))}
@@ -1130,7 +1264,13 @@ export function AnimeOverlapPage({
                     </Label>
                     <MultiSelectCombobox
                       ariaLabel="Genres"
-                      onSelectedValuesChange={setSelectedGenres}
+                      onSelectedValuesChange={(nextSelectedValues) =>
+                        updateSearchState((previousState) => ({
+                          ...previousState,
+                          selectedGenres:
+                            serializeGenreValues(nextSelectedValues),
+                        }))
+                      }
                       options={availableGenres.map((genre) => ({
                         label: genre,
                         value: genre,
@@ -1148,9 +1288,12 @@ export function AnimeOverlapPage({
                   </Label>
                   <Select
                     onValueChange={(value) =>
-                      setDifficultyFilterMode(value as DifficultyFilterMode)
+                      updateSearchState((previousState) => ({
+                        ...previousState,
+                        difficultyFilterMode: value as DifficultyFilterMode,
+                      }))
                     }
-                    value={difficultyFilterMode}
+                    value={activeSearchState.difficultyFilterMode}
                   >
                     <SelectTrigger
                       aria-label="Difficulty filter"
@@ -1175,19 +1318,19 @@ export function AnimeOverlapPage({
                   </Select>
                 </div>
 
-                {difficultyFilterMode !== "none" ? (
+                {activeSearchState.difficultyFilterMode !== "none" ? (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between gap-3 text-sm text-slate-300">
                       <span>Allowed range</span>
                       {activeDifficultyBounds && activeDifficultyRange ? (
                         <span className="font-medium text-slate-100">
                           {formatDifficultyRangeValue(
-                            difficultyFilterMode,
+                            activeSearchState.difficultyFilterMode,
                             activeDifficultyRange[0]
                           )}{" "}
                           -{" "}
                           {formatDifficultyRangeValue(
-                            difficultyFilterMode,
+                            activeSearchState.difficultyFilterMode,
                             activeDifficultyRange[1]
                           )}
                         </span>
@@ -1198,7 +1341,7 @@ export function AnimeOverlapPage({
                     {activeDifficultyBounds && activeDifficultyRange ? (
                       <>
                         <Slider
-                          aria-label={`${difficultyFilterModeLabels[difficultyFilterMode]} range`}
+                          aria-label={`${difficultyFilterModeLabels[activeSearchState.difficultyFilterMode]} range`}
                           className="py-1"
                           max={activeDifficultyBounds[1]}
                           min={activeDifficultyBounds[0]}
@@ -1212,19 +1355,24 @@ export function AnimeOverlapPage({
                               Math.max(nextRange[0], nextRange[1]),
                             ] as NumericRange
 
-                            if (
-                              difficultyFilterMode === "jpdbAverageDifficulty"
-                            ) {
-                              setJpdbDifficultyRange(normalizedNextRange)
-                              return
-                            }
-
-                            if (difficultyFilterMode === "learnNativelyLevel") {
-                              setLearnNativelyLevelRange(normalizedNextRange)
-                              return
-                            }
-
-                            setLearnNativelyJlptRange(normalizedNextRange)
+                            updateSearchState((previousState) => ({
+                              ...previousState,
+                              jpdbDifficultyRange:
+                                previousState.difficultyFilterMode ===
+                                "jpdbAverageDifficulty"
+                                  ? normalizedNextRange
+                                  : previousState.jpdbDifficultyRange,
+                              learnNativelyLevelRange:
+                                previousState.difficultyFilterMode ===
+                                "learnNativelyLevel"
+                                  ? normalizedNextRange
+                                  : previousState.learnNativelyLevelRange,
+                              learnNativelyJlptRange:
+                                previousState.difficultyFilterMode ===
+                                "learnNativelyJlptEquivalent"
+                                  ? normalizedNextRange
+                                  : previousState.learnNativelyJlptRange,
+                            }))
                           }}
                           step={1}
                           value={activeDifficultyRange}
@@ -1232,13 +1380,13 @@ export function AnimeOverlapPage({
                         <div className="flex items-center justify-between text-xs uppercase tracking-[0.18em] text-slate-500">
                           <span>
                             {formatDifficultyRangeValue(
-                              difficultyFilterMode,
+                              activeSearchState.difficultyFilterMode,
                               activeDifficultyBounds[0]
                             )}
                           </span>
                           <span>
                             {formatDifficultyRangeValue(
-                              difficultyFilterMode,
+                              activeSearchState.difficultyFilterMode,
                               activeDifficultyBounds[1]
                             )}
                           </span>
@@ -1258,10 +1406,13 @@ export function AnimeOverlapPage({
                   </Label>
                   <div className="flex items-center gap-3 text-sm text-slate-300">
                     <Checkbox
-                      checked={hideIncomplete}
+                      checked={activeSearchState.hideIncomplete}
                       id="hide-incomplete"
                       onCheckedChange={(checked) =>
-                        setHideIncomplete(Boolean(checked))
+                        updateSearchState((previousState) => ({
+                          ...previousState,
+                          hideIncomplete: Boolean(checked),
+                        }))
                       }
                     />
                     <Label
@@ -1279,10 +1430,13 @@ export function AnimeOverlapPage({
                   </Label>
                   <div className="flex items-center gap-3 text-sm text-slate-300">
                     <Checkbox
-                      checked={hideLowConfidence}
+                      checked={activeSearchState.hideLowConfidence}
                       id="hide-low-confidence"
                       onCheckedChange={(checked) =>
-                        setHideLowConfidence(Boolean(checked))
+                        updateSearchState((previousState) => ({
+                          ...previousState,
+                          hideLowConfidence: Boolean(checked),
+                        }))
                       }
                     />
                     <Label
@@ -1299,8 +1453,13 @@ export function AnimeOverlapPage({
                     Sort by
                   </Label>
                   <Select
-                    onValueChange={(value) => setSortBy(value as SortOption)}
-                    value={sortBy}
+                    onValueChange={(value) =>
+                      updateSearchState((previousState) => ({
+                        ...previousState,
+                        sortBy: value as SortOption,
+                      }))
+                    }
+                    value={activeSearchState.sortBy}
                   >
                     <SelectTrigger
                       aria-label="Sort by"
@@ -1319,7 +1478,7 @@ export function AnimeOverlapPage({
                           value={option}
                         >
                           {option === "status"
-                            ? "AniList Status then Title"
+                            ? "Watch Status then Title"
                             : option === "averageScore"
                               ? "Average Score"
                               : "Popularity"}
@@ -1341,7 +1500,7 @@ export function AnimeOverlapPage({
                   <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-4 sm:grid-cols-[repeat(auto-fill,minmax(190px,1fr))] xl:grid-cols-[repeat(auto-fill,minmax(210px,1fr))]">
                     {visibleResults.map((result) => (
                       <ResultCard
-                        key={`${result.anilistEntry.id}-${result.matchedJimaku.id}`}
+                        key={`${result.entry.source}-${result.entry.id}-${result.matchedJimaku.id}`}
                         onOpen={() => setSelectedResult(result)}
                         result={result}
                       />
