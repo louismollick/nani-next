@@ -477,6 +477,18 @@ describe("AnimeOverlapPage", () => {
     ).toBeTruthy()
   })
 
+  it("renders title search before subtitle availability", async () => {
+    await loadResults()
+
+    const titleLabel = screen.getByText("Anime title")
+    const subtitleLabel = screen.getByText("Japanese subtitle availability")
+
+    expect(
+      titleLabel.compareDocumentPosition(subtitleLabel) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+  })
+
   it("shows AniList cache details in a tooltip", async () => {
     const dateNowSpy = vi
       .spyOn(Date, "now")
@@ -600,6 +612,90 @@ describe("AnimeOverlapPage", () => {
 
     await waitFor(() => {
       expect(screen.getAllByText("Empty Sub Show").length).toBeGreaterThan(0)
+    })
+  })
+
+  it("filters by english or romanized title query", async () => {
+    await loadResults()
+    await selectComboboxOption(
+      "Japanese subtitle availability",
+      "Some episodes subtitled"
+    )
+
+    fireEvent.change(screen.getByPlaceholderText("Search titles..."), {
+      target: { value: "apothecary" },
+    })
+
+    await waitFor(() => {
+      expect(
+        screen.getAllByText("The Apothecary Diaries").length
+      ).toBeGreaterThan(0)
+      expect(screen.queryByText("Dandadan")).not.toBeInTheDocument()
+      expect(screen.queryByText("Orb")).not.toBeInTheDocument()
+    })
+  })
+
+  it("filters by native japanese title query", async () => {
+    await loadResults()
+
+    fireEvent.change(screen.getByPlaceholderText("Search titles..."), {
+      target: { value: "薬屋" },
+    })
+
+    await waitFor(() => {
+      expect(
+        screen.getAllByText("The Apothecary Diaries").length
+      ).toBeGreaterThan(0)
+    })
+  })
+
+  it("normalizes title query punctuation and case", async () => {
+    await loadResults()
+    await selectComboboxOption(
+      "Japanese subtitle availability",
+      "Some episodes subtitled"
+    )
+
+    fireEvent.change(screen.getByPlaceholderText("Search titles..."), {
+      target: { value: "  APOTHECARY!! " },
+    })
+
+    await waitFor(() => {
+      expect(
+        screen.getAllByText("The Apothecary Diaries").length
+      ).toBeGreaterThan(0)
+      expect(screen.queryByText("Dandadan")).not.toBeInTheDocument()
+    })
+  })
+
+  it("restores results when title query is cleared", async () => {
+    await loadResults()
+    await selectComboboxOption(
+      "Japanese subtitle availability",
+      "Some episodes subtitled"
+    )
+
+    const titleSearch = screen.getByPlaceholderText("Search titles...")
+
+    fireEvent.change(titleSearch, {
+      target: { value: "apothecary" },
+    })
+
+    await waitFor(() => {
+      expect(screen.queryByText("Dandadan")).not.toBeInTheDocument()
+      expect(screen.queryByText("Orb")).not.toBeInTheDocument()
+    })
+
+    fireEvent.change(titleSearch, {
+      target: { value: "" },
+    })
+
+    await waitFor(() => {
+      expect(screen.getAllByText("Dandadan").length).toBeGreaterThan(0)
+      expect(screen.getAllByText("Orb").length).toBeGreaterThan(0)
+      expect(
+        screen.getAllByText("The Apothecary Diaries").length
+      ).toBeGreaterThan(0)
     })
   })
 

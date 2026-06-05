@@ -19,6 +19,7 @@ export type NumericRange = [number, number]
 export type LookupSearchState = {
   source: AnimeSource
   username: string
+  titleQuery: string
   selectedStatuses: WatchStatus[]
   selectedMediaStatuses: Exclude<MediaStatus, null>[]
   selectedGenres: string[]
@@ -33,6 +34,7 @@ export type LookupSearchState = {
 export const defaultLookupSearchState: LookupSearchState = {
   source: "anilist",
   username: "",
+  titleQuery: "",
   selectedStatuses: ["PLANNING", "PAUSED"],
   selectedMediaStatuses: [...mediaStatuses],
   selectedGenres: [],
@@ -103,6 +105,7 @@ export function validateLookupSearch(
       defaultLookupSearchState.source
     ),
     username: typeof search.username === "string" ? search.username : "",
+    titleQuery: typeof search.titleQuery === "string" ? search.titleQuery : "",
     selectedStatuses: sanitizeEnumArray(
       search.selectedStatuses,
       watchStatuses,
@@ -189,6 +192,7 @@ export function canonicalizeLookupSearch(
   )
   const normalizedGenres = serializeGenreValues(search.selectedGenres)
   const trimmedUsername = search.username.trim()
+  const trimmedTitleQuery = search.titleQuery.trim()
   const canonicalSearch: Partial<LookupSearchState> = {}
 
   if (search.source !== defaultLookupSearchState.source) {
@@ -197,6 +201,10 @@ export function canonicalizeLookupSearch(
 
   if (trimmedUsername) {
     canonicalSearch.username = trimmedUsername
+  }
+
+  if (trimmedTitleQuery) {
+    canonicalSearch.titleQuery = trimmedTitleQuery
   }
 
   if (

@@ -20,6 +20,7 @@ describe("search-state", () => {
         ...defaultLookupSearchState,
         source: "myanimelist",
         username: "  Mollicl  ",
+        titleQuery: "  apothecary!! ",
         selectedStatuses: ["CURRENT", "PLANNING"],
         selectedMediaStatuses: ["RELEASING"],
         selectedGenres: ["Mystery", "Comedy", "Mystery"],
@@ -31,6 +32,7 @@ describe("search-state", () => {
     ).toEqual({
       source: "myanimelist",
       username: "Mollicl",
+      titleQuery: "apothecary!!",
       selectedStatuses: ["CURRENT", "PLANNING"],
       selectedMediaStatuses: ["RELEASING"],
       selectedGenres: ["Comedy", "Mystery"],

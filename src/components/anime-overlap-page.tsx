@@ -36,6 +36,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { successLookupTtlSeconds } from "@/lib/lookup-cache"
+import { getEntryTitles } from "@/lib/matching"
+import { normalizeTitle } from "@/lib/normalize"
 import {
   defaultLookupSearchState,
   getLookupIdentity,
@@ -873,6 +875,7 @@ export function AnimeOverlapPage({
   const autoLookupPerformedRef = useRef(false)
 
   const activeSearchState = searchState ?? localSearchState
+  const normalizedTitleQuery = normalizeTitle(activeSearchState.titleQuery)
   const selectedStatuses = new Set(activeSearchState.selectedStatuses)
   const selectedMediaStatuses = new Set(activeSearchState.selectedMediaStatuses)
   const selectedGenres = new Set(activeSearchState.selectedGenres)
@@ -1049,6 +1052,15 @@ export function AnimeOverlapPage({
     ? sortResults(
         lookupState.results.filter((result) => {
           if (!selectedStatuses.has(result.entry.status)) {
+            return false
+          }
+
+          if (
+            normalizedTitleQuery &&
+            !getEntryTitles(result.entry).some((title) =>
+              normalizeTitle(title).includes(normalizedTitleQuery)
+            )
+          ) {
             return false
           }
 
@@ -1252,6 +1264,30 @@ export function AnimeOverlapPage({
                 <p className="text-[15px] font-semibold text-slate-200">
                   Filters
                 </p>
+
+                <div className="space-y-2">
+                  <Label
+                    className="text-[13px] font-medium text-slate-400"
+                    htmlFor="title-filter"
+                  >
+                    Anime title
+                  </Label>
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
+                    <Input
+                      className="pl-11"
+                      id="title-filter"
+                      onChange={(event) =>
+                        updateSearchState((previousState) => ({
+                          ...previousState,
+                          titleQuery: event.target.value,
+                        }))
+                      }
+                      placeholder="Search titles..."
+                      value={activeSearchState.titleQuery}
+                    />
+                  </div>
+                </div>
 
                 <div className="space-y-2">
                   <Label className="text-[13px] font-medium text-slate-400">
