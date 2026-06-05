@@ -17,7 +17,15 @@ export const mediaStatuses = [
 
 export const mediaStatusesAll = [...mediaStatuses, "NOT_YET_RELEASED"] as const
 
-export const sortOptions = ["status", "averageScore", "popularity"] as const
+export const sortOptions = [
+  "averageScore",
+  "popularity",
+  "jpdbAverageDifficulty",
+  "learnNativelyLevel",
+  "title",
+  "status",
+] as const
+export const sortDirections = ["desc", "asc"] as const
 export const subtitleAvailabilityOptions = ["all", "some", "none"] as const
 export const difficultyFilterModes = [
   "none",
@@ -37,6 +45,7 @@ export const learnNativelyJlptEquivalents = [
 export type AnimeSource = (typeof animeSources)[number]
 export type WatchStatus = (typeof watchStatuses)[number]
 export type SortOption = (typeof sortOptions)[number]
+export type SortDirection = (typeof sortDirections)[number]
 export type SubtitleAvailabilityOption =
   (typeof subtitleAvailabilityOptions)[number]
 export type DifficultyFilterMode = (typeof difficultyFilterModes)[number]

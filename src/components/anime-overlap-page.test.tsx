@@ -467,8 +467,39 @@ function nudgeSlider(slider: HTMLElement, key: string, count = 1) {
 }
 
 async function loadResults() {
-  const lookup = vi.fn().mockResolvedValue(successResponse())
-  render(<AnimeOverlapPage lookup={lookup} />)
+  return loadResultsWithState()
+}
+
+function getVisibleTitles() {
+  return screen
+    .getAllByRole("heading", { level: 3 })
+    .map((heading) => heading.textContent?.trim())
+}
+
+async function loadResultsWithState(
+  searchState: Partial<LookupSearchState> = {},
+  response: LookupResponse = successResponse()
+) {
+  const lookup = vi.fn().mockResolvedValue(response)
+
+  function TestHarness() {
+    const [state, setState] = useState<LookupSearchState>({
+      ...defaultLookupSearchState,
+      ...searchState,
+    })
+
+    return (
+      <AnimeOverlapPage
+        lookup={lookup}
+        onSearchStateChange={(updater) =>
+          setState((previous) => updater(previous))
+        }
+        searchState={state}
+      />
+    )
+  }
+
+  render(<TestHarness />)
 
   fireEvent.change(screen.getByPlaceholderText("Enter username"), {
     target: { value: "mollicl" },
@@ -486,20 +517,195 @@ describe("AnimeOverlapPage", () => {
     expect(screen.queryByText("Blue Box")).not.toBeInTheDocument()
     expect(screen.queryByText("Orb")).not.toBeInTheDocument()
     expect(screen.queryByText("Empty Sub Show")).not.toBeInTheDocument()
-    expect(
-      screen
-        .getAllByRole("heading", { level: 3 })
-        .map((heading) => heading.textContent?.trim())
-    ).toEqual(["The Apothecary Diaries"])
+    expect(getVisibleTitles()).toEqual(["The Apothecary Diaries"])
+    expect(screen.getByRole("tab", { name: "Desc" })).toHaveAttribute(
+      "aria-selected",
+      "true"
+    )
 
     await selectDropdownOption("Sort by", "Popularity")
 
     await waitFor(() => {
-      expect(
-        screen
-          .getAllByRole("heading", { level: 3 })
-          .map((heading) => heading.textContent?.trim())
-      ).toEqual(["The Apothecary Diaries"])
+      expect(getVisibleTitles()).toEqual(["The Apothecary Diaries"])
+    })
+  })
+
+  it("renders the expanded sort options in the expected order", async () => {
+    await loadResults()
+
+    fireEvent.click(await screen.findByRole("combobox", { name: "Sort by" }))
+
+    expect(
+      screen.getAllByRole("option").map((option) => option.textContent)
+    ).toEqual([
+      "Average Score",
+      "Popularity",
+      "JPDB Average Difficulty",
+      "LearnNatively Level",
+      "Title",
+      "Watch Status",
+    ])
+  })
+
+  it("sorts watch status ties by title", async () => {
+    await loadResultsWithState({
+      selectedStatuses: [
+        "CURRENT",
+        "PLANNING",
+        "COMPLETED",
+        "PAUSED",
+        "DROPPED",
+      ],
+      selectedSubtitleAvailability: ["all", "some", "none"],
+      sortBy: "status",
+    })
+
+    expect(getVisibleTitles()).toEqual([
+      "Blue Box",
+      "Empty Sub Show",
+      "No Match Show",
+      "Orb",
+      "The Apothecary Diaries",
+      "Dandadan",
+    ])
+  })
+
+  it("sorts jpdb and learnnatively ties by title and missing values last", async () => {
+    const response = successResponse()
+    if (!response.ok) {
+      throw new Error("Expected successful lookup response")
+    }
+    const blueBox = response.results.find((result) => result.entry.id === 1)
+    const dandadan = response.results.find((result) => result.entry.id === 4)
+
+    if (blueBox?.matchedJpdb && dandadan?.matchedJpdb) {
+      blueBox.matchedJpdb.entry.averageDifficulty = 10
+      dandadan.matchedJpdb.entry.averageDifficulty = 10
+    }
+
+    if (blueBox?.matchedLearnNatively && dandadan?.matchedLearnNatively) {
+      blueBox.matchedLearnNatively.entry.level = "L0"
+      blueBox.matchedLearnNatively.levelNumber = 0
+      blueBox.matchedLearnNatively.jlptEquivalent = "N5"
+      dandadan.matchedLearnNatively.entry.level = "L0"
+      dandadan.matchedLearnNatively.levelNumber = 0
+      dandadan.matchedLearnNatively.jlptEquivalent = "N5"
+    }
+
+    await loadResultsWithState(
+      {
+        selectedStatuses: [
+          "CURRENT",
+          "PLANNING",
+          "COMPLETED",
+          "PAUSED",
+          "DROPPED",
+        ],
+        selectedSubtitleAvailability: ["all", "some", "none"],
+        sortBy: "jpdbAverageDifficulty",
+      },
+      response
+    )
+
+    expect(getVisibleTitles()).toEqual([
+      "The Apothecary Diaries",
+      "Orb",
+      "Blue Box",
+      "Dandadan",
+      "Empty Sub Show",
+      "No Match Show",
+    ])
+
+    await selectDropdownOption("Sort by", "LearnNatively Level")
+
+    await waitFor(() => {
+      expect(getVisibleTitles()).toEqual([
+        "The Apothecary Diaries",
+        "Orb",
+        "Blue Box",
+        "Dandadan",
+        "Empty Sub Show",
+        "No Match Show",
+      ])
+    })
+  })
+
+  it("applies ascending direction across title and numeric sorts", async () => {
+    await loadResultsWithState({
+      selectedStatuses: [
+        "CURRENT",
+        "PLANNING",
+        "COMPLETED",
+        "PAUSED",
+        "DROPPED",
+      ],
+      selectedSubtitleAvailability: ["all", "some", "none"],
+    })
+
+    fireEvent.click(screen.getByRole("tab", { name: "Asc" }))
+
+    await waitFor(() => {
+      expect(screen.getByRole("tab", { name: "Asc" })).toHaveAttribute(
+        "aria-selected",
+        "true"
+      )
+    })
+
+    expect(getVisibleTitles()).toEqual([
+      "Empty Sub Show",
+      "No Match Show",
+      "Dandadan",
+      "Blue Box",
+      "Orb",
+      "The Apothecary Diaries",
+    ])
+
+    await selectDropdownOption("Sort by", "Popularity")
+    await waitFor(() => {
+      expect(getVisibleTitles()).toEqual([
+        "Empty Sub Show",
+        "No Match Show",
+        "Blue Box",
+        "Orb",
+        "The Apothecary Diaries",
+        "Dandadan",
+      ])
+    })
+
+    await selectDropdownOption("Sort by", "JPDB Average Difficulty")
+    await waitFor(() => {
+      expect(getVisibleTitles()).toEqual([
+        "Dandadan",
+        "Blue Box",
+        "Orb",
+        "The Apothecary Diaries",
+        "Empty Sub Show",
+        "No Match Show",
+      ])
+    })
+
+    await selectDropdownOption("Sort by", "LearnNatively Level")
+    await waitFor(() => {
+      expect(getVisibleTitles()).toEqual([
+        "Dandadan",
+        "Blue Box",
+        "Orb",
+        "The Apothecary Diaries",
+        "Empty Sub Show",
+        "No Match Show",
+      ])
+    })
+
+    await selectDropdownOption("Sort by", "Title")
+    await waitFor(() => {
+      expect(getVisibleTitles()).toEqual([
+        "Blue Box",
+        "Dandadan",
+        "Empty Sub Show",
+        "No Match Show",
+        "Orb",
+        "The Apothecary Diaries",
+      ])
     })
   })
 
@@ -549,6 +755,95 @@ describe("AnimeOverlapPage", () => {
     )
 
     dateNowSpy.mockRestore()
+  })
+
+  it("opens the next anime tooltip on scroll without extra mouse movement", async () => {
+    await loadResultsWithState({
+      selectedStatuses: [
+        "CURRENT",
+        "PLANNING",
+        "COMPLETED",
+        "PAUSED",
+        "DROPPED",
+      ],
+      selectedSubtitleAvailability: ["all", "some", "none"],
+      sortBy: "title",
+      sortDirection: "asc",
+    })
+
+    const blueBoxCard = screen
+      .getByRole("heading", { name: "Blue Box" })
+      .closest("button")
+    const orbCard = screen
+      .getByRole("heading", { name: "Orb" })
+      .closest("button")
+
+    expect(blueBoxCard).not.toBeNull()
+    expect(orbCard).not.toBeNull()
+
+    let blueBoxRect = {
+      bottom: 100,
+      height: 100,
+      left: 0,
+      right: 100,
+      top: 0,
+      width: 100,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    }
+    let orbRect = {
+      bottom: 220,
+      height: 100,
+      left: 0,
+      right: 100,
+      top: 120,
+      width: 100,
+      x: 0,
+      y: 120,
+      toJSON: () => ({}),
+    }
+
+    const blueBoxElement = blueBoxCard as HTMLElement
+    const orbElement = orbCard as HTMLElement
+
+    Object.defineProperty(blueBoxElement, "getBoundingClientRect", {
+      configurable: true,
+      value: vi.fn(() => blueBoxRect as DOMRect),
+    })
+    Object.defineProperty(orbElement, "getBoundingClientRect", {
+      configurable: true,
+      value: vi.fn(() => orbRect as DOMRect),
+    })
+
+    fireEvent.pointerMove(blueBoxElement, {
+      clientX: 50,
+      clientY: 50,
+      pointerType: "mouse",
+    })
+
+    await waitFor(() => {
+      expect(screen.getByRole("tooltip").textContent).toContain("12")
+    })
+
+    blueBoxRect = {
+      ...blueBoxRect,
+      bottom: -20,
+      top: -120,
+      y: -120,
+    }
+    orbRect = {
+      ...orbRect,
+      bottom: 100,
+      top: 0,
+      y: 0,
+    }
+
+    fireEvent.scroll(document.documentElement)
+
+    await waitFor(() => {
+      expect(screen.getByRole("tooltip").textContent).toContain("24")
+    })
   })
 
   it("does not write full difficulty bounds back into search state after lookup", async () => {

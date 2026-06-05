@@ -8,7 +8,11 @@ import {
   Sparkles,
   TriangleAlert,
 } from "lucide-react"
-import type { FormEvent, ReactNode } from "react"
+import type {
+  FormEvent,
+  ReactNode,
+  PointerEvent as ReactPointerEvent,
+} from "react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -29,6 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Tooltip,
   TooltipContent,
@@ -64,8 +69,11 @@ import {
   type MediaStatus,
   mediaStatuses,
   type OverlapResult,
+  type SortDirection,
   type SortOption,
   type SubtitleAvailabilityOption,
+  sortDirections,
+  sortOptions,
   subtitleAvailabilityOptions,
   type WatchStatus,
   watchStatuses,
@@ -81,6 +89,27 @@ type AnimeOverlapPageProps = {
     updater: (previousState: LookupSearchState) => LookupSearchState
   ) => void
   searchState?: LookupSearchState
+}
+
+type PointerPosition = {
+  clientX: number
+  clientY: number
+}
+
+let lastKnownPointerPosition: PointerPosition | null = null
+
+function isPointerWithinElement(
+  element: HTMLElement,
+  pointerPosition: PointerPosition
+) {
+  const rect = element.getBoundingClientRect()
+
+  return (
+    pointerPosition.clientX >= rect.left &&
+    pointerPosition.clientX <= rect.right &&
+    pointerPosition.clientY >= rect.top &&
+    pointerPosition.clientY <= rect.bottom
+  )
 }
 
 const relativeTimeFormatter = new Intl.RelativeTimeFormat(undefined, {
@@ -312,34 +341,119 @@ function getEntryTitle(entry: AnimeEntry) {
   return entry.media.title.primary ?? entry.media.title.english ?? "Unknown"
 }
 
-const sortSelectOptions: SortOption[] = ["averageScore", "status", "popularity"]
+const sortSelectOptions: SortOption[] = [...sortOptions]
 
-function sortResults(results: OverlapResult[], sortBy: SortOption) {
+const sortOptionLabels: Record<SortOption, string> = {
+  averageScore: "Average Score",
+  popularity: "Popularity",
+  jpdbAverageDifficulty: "JPDB Average Difficulty",
+  learnNativelyLevel: "LearnNatively Level",
+  title: "Title",
+  status: "Watch Status",
+}
+
+const sortDirectionLabels: Record<SortDirection, string> = {
+  desc: "Desc",
+  asc: "Asc",
+}
+
+function compareTitles(left: OverlapResult, right: OverlapResult) {
+  return getEntryTitle(left.entry).localeCompare(getEntryTitle(right.entry))
+}
+
+function compareOptionalNumbers(
+  leftValue: number | null | undefined,
+  rightValue: number | null | undefined,
+  direction: SortDirection,
+  left: OverlapResult,
+  right: OverlapResult
+) {
+  const leftHasValue = typeof leftValue === "number"
+  const rightHasValue = typeof rightValue === "number"
+
+  if (!leftHasValue && !rightHasValue) {
+    return compareTitles(left, right)
+  }
+
+  if (!leftHasValue) {
+    return 1
+  }
+
+  if (!rightHasValue) {
+    return -1
+  }
+
+  const delta =
+    direction === "desc" ? rightValue - leftValue : leftValue - rightValue
+
+  if (delta !== 0) {
+    return delta
+  }
+
+  return compareTitles(left, right)
+}
+
+function sortResults(
+  results: OverlapResult[],
+  sortBy: SortOption,
+  sortDirection: SortDirection
+) {
   const nextResults = [...results]
 
   nextResults.sort((left, right) => {
     if (sortBy === "averageScore") {
-      return (
-        (right.entry.media.averageScore ?? -1) -
-        (left.entry.media.averageScore ?? -1)
+      return compareOptionalNumbers(
+        left.entry.media.averageScore,
+        right.entry.media.averageScore,
+        sortDirection,
+        left,
+        right
       )
     }
 
     if (sortBy === "popularity") {
-      return (
-        (right.entry.media.popularity ?? -1) -
-        (left.entry.media.popularity ?? -1)
+      return compareOptionalNumbers(
+        left.entry.media.popularity,
+        right.entry.media.popularity,
+        sortDirection,
+        left,
+        right
       )
+    }
+
+    if (sortBy === "jpdbAverageDifficulty") {
+      return compareOptionalNumbers(
+        left.matchedJpdb?.entry.averageDifficulty,
+        right.matchedJpdb?.entry.averageDifficulty,
+        sortDirection,
+        left,
+        right
+      )
+    }
+
+    if (sortBy === "learnNativelyLevel") {
+      return compareOptionalNumbers(
+        left.matchedLearnNatively?.levelNumber,
+        right.matchedLearnNatively?.levelNumber,
+        sortDirection,
+        left,
+        right
+      )
+    }
+
+    if (sortBy === "title") {
+      const titleDelta = compareTitles(left, right)
+      return sortDirection === "desc" ? titleDelta * -1 : titleDelta
     }
 
     const statusDelta =
       statusOrder[left.entry.status] - statusOrder[right.entry.status]
 
     if (statusDelta !== 0) {
-      return statusDelta
+      return sortDirection === "desc" ? statusDelta : statusDelta * -1
     }
 
-    return getEntryTitle(left.entry).localeCompare(getEntryTitle(right.entry))
+    return compareTitles(left, right)
   })
 
   return nextResults
@@ -485,12 +599,59 @@ function ResultCard({
   result: OverlapResult
   onOpen: () => void
 }) {
+  const triggerRef = useRef<HTMLButtonElement | null>(null)
+  const [isTooltipOpen, setIsTooltipOpen] = useState(false)
+
+  const syncTooltipHoverState = useCallback(() => {
+    const trigger = triggerRef.current
+
+    if (!trigger || !lastKnownPointerPosition) {
+      return
+    }
+
+    setIsTooltipOpen(isPointerWithinElement(trigger, lastKnownPointerPosition))
+  }, [])
+
+  useEffect(() => {
+    const handleScroll = () => {
+      syncTooltipHoverState()
+    }
+
+    window.addEventListener("scroll", handleScroll, {
+      capture: true,
+      passive: true,
+    })
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll, true)
+    }
+  }, [syncTooltipHoverState])
+
+  const handlePointerUpdate = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (event.pointerType === "touch") {
+      return
+    }
+
+    lastKnownPointerPosition = {
+      clientX: event.clientX,
+      clientY: event.clientY,
+    }
+
+    setIsTooltipOpen(true)
+  }
+
   return (
-    <Tooltip>
+    <Tooltip open={isTooltipOpen}>
       <TooltipTrigger asChild>
         <button
           className="group h-full w-full text-left select-text"
           onClick={onOpen}
+          onBlur={() => setIsTooltipOpen(false)}
+          onFocus={() => setIsTooltipOpen(true)}
+          onPointerEnter={handlePointerUpdate}
+          onPointerLeave={() => setIsTooltipOpen(false)}
+          onPointerMove={handlePointerUpdate}
+          ref={triggerRef}
           type="button"
         >
           <div className="space-y-3 transition duration-200 group-hover:-translate-y-1">
@@ -1213,7 +1374,8 @@ export function AnimeOverlapPage({
 
           return true
         }),
-        activeSearchState.sortBy
+        activeSearchState.sortBy,
+        activeSearchState.sortDirection
       )
     : []
 
@@ -1577,9 +1739,42 @@ export function AnimeOverlapPage({
                 ) : null}
 
                 <div className="space-y-2">
-                  <Label className="text-[13px] font-medium text-slate-400">
-                    Sort by
-                  </Label>
+                  <div className="flex items-center justify-between gap-3">
+                    <Label className="text-[13px] font-medium text-slate-400">
+                      Sort by
+                    </Label>
+                    <Tabs
+                      aria-label="Sort direction"
+                      className="gap-0"
+                      onValueChange={(value) =>
+                        updateSearchState((previousState) => ({
+                          ...previousState,
+                          sortDirection: value as SortDirection,
+                        }))
+                      }
+                      value={activeSearchState.sortDirection}
+                    >
+                      <TabsList aria-label="Sort direction">
+                        {sortDirections.map((direction) => {
+                          return (
+                            <TabsTrigger
+                              aria-label={sortDirectionLabels[direction]}
+                              key={direction}
+                              onClick={() =>
+                                updateSearchState((previousState) => ({
+                                  ...previousState,
+                                  sortDirection: direction,
+                                }))
+                              }
+                              value={direction}
+                            >
+                              {sortDirectionLabels[direction]}
+                            </TabsTrigger>
+                          )
+                        })}
+                      </TabsList>
+                    </Tabs>
+                  </div>
                   <Select
                     onValueChange={(value) =>
                       updateSearchState((previousState) => ({
@@ -1598,11 +1793,7 @@ export function AnimeOverlapPage({
                     >
                       {sortSelectOptions.map((option) => (
                         <SelectItem key={option} value={option}>
-                          {option === "status"
-                            ? "Watch Status then Title"
-                            : option === "averageScore"
-                              ? "Average Score"
-                              : "Popularity"}
+                          {sortOptionLabels[option]}
                         </SelectItem>
                       ))}
                     </SelectContent>

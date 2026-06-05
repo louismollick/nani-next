@@ -31,6 +31,7 @@ function stringifySearch(search: Record<string, unknown>) {
       search.difficultyFilterMode
     ),
     sortBy: lowercaseSearchParamValue(search.sortBy),
+    sortDirection: lowercaseSearchParamValue(search.sortDirection),
   })
 }
 

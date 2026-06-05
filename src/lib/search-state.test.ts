@@ -28,6 +28,7 @@ describe("search-state", () => {
         difficultyFilterMode: "learnNativelyLevel",
         learnNativelyLevelRange: [3, 12],
         sortBy: "status",
+        sortDirection: "asc",
       })
     ).toEqual({
       source: "myanimelist",
@@ -40,6 +41,7 @@ describe("search-state", () => {
       difficultyFilterMode: "learnNativelyLevel",
       learnNativelyLevelRange: [3, 12],
       sortBy: "status",
+      sortDirection: "asc",
     })
   })
 
@@ -75,6 +77,7 @@ describe("search-state", () => {
         selectedSubtitleAvailability: ["SOME"],
         difficultyFilterMode: "learnnativelylevel",
         sortBy: "STATUS",
+        sortDirection: "ASC",
       })
     ).toEqual({
       ...defaultLookupSearchState,
@@ -84,6 +87,18 @@ describe("search-state", () => {
       selectedSubtitleAvailability: ["some"],
       difficultyFilterMode: "learnNativelyLevel",
       sortBy: "status",
+      sortDirection: "asc",
+    })
+  })
+
+  it("omits default sort direction and keeps non-default direction", () => {
+    expect(
+      canonicalizeLookupSearch({
+        ...defaultLookupSearchState,
+        sortDirection: "asc",
+      })
+    ).toEqual({
+      sortDirection: "asc",
     })
   })
 

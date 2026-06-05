@@ -6,8 +6,10 @@ import {
   learnNativelyJlptEquivalents,
   type MediaStatus,
   mediaStatuses,
+  type SortDirection,
   type SortOption,
   type SubtitleAvailabilityOption,
+  sortDirections,
   sortOptions,
   subtitleAvailabilityOptions,
   type WatchStatus,
@@ -29,6 +31,7 @@ export type LookupSearchState = {
   learnNativelyLevelRange: NumericRange | null
   learnNativelyJlptRange: NumericRange | null
   sortBy: SortOption
+  sortDirection: SortDirection
 }
 
 export const defaultLookupSearchState: LookupSearchState = {
@@ -44,6 +47,7 @@ export const defaultLookupSearchState: LookupSearchState = {
   learnNativelyLevelRange: null,
   learnNativelyJlptRange: null,
   sortBy: "averageScore",
+  sortDirection: "desc",
 }
 
 function toStringArray(value: unknown) {
@@ -145,6 +149,11 @@ export function validateLookupSearch(
     learnNativelyLevelRange: toNumberRange(search.learnNativelyLevelRange),
     learnNativelyJlptRange: toNumberRange(search.learnNativelyJlptRange),
     sortBy: toEnum(search.sortBy, sortOptions, defaultLookupSearchState.sortBy),
+    sortDirection: toEnum(
+      search.sortDirection,
+      sortDirections,
+      defaultLookupSearchState.sortDirection
+    ),
   }
 }
 
@@ -288,6 +297,10 @@ export function canonicalizeLookupSearch(
 
   if (search.sortBy !== defaultLookupSearchState.sortBy) {
     canonicalSearch.sortBy = search.sortBy
+  }
+
+  if (search.sortDirection !== defaultLookupSearchState.sortDirection) {
+    canonicalSearch.sortDirection = search.sortDirection
   }
 
   return canonicalSearch
