@@ -63,10 +63,15 @@ function sanitizeEnumArray<TValue extends string>(
   allowedValues: readonly TValue[],
   fallback: readonly TValue[]
 ) {
-  const allowedSet = new Set<string>(allowedValues)
-  const nextValues = toStringArray(value).filter((item): item is TValue =>
-    allowedSet.has(item)
+  const allowedValueMap = new Map(
+    allowedValues.map((allowedValue) => [
+      allowedValue.toLowerCase(),
+      allowedValue,
+    ])
   )
+  const nextValues = toStringArray(value)
+    .map((item) => allowedValueMap.get(item.toLowerCase()))
+    .filter((item): item is TValue => typeof item === "string")
 
   return nextValues.length > 0 ? nextValues : [...fallback]
 }
@@ -76,9 +81,18 @@ function toEnum<TValue extends string>(
   allowedValues: readonly TValue[],
   fallback: TValue
 ) {
-  return typeof value === "string" && allowedValues.includes(value as TValue)
-    ? (value as TValue)
-    : fallback
+  if (typeof value !== "string") {
+    return fallback
+  }
+
+  const allowedValueMap = new Map(
+    allowedValues.map((allowedValue) => [
+      allowedValue.toLowerCase(),
+      allowedValue,
+    ])
+  )
+
+  return allowedValueMap.get(value.toLowerCase()) ?? fallback
 }
 
 function toNumberRange(value: unknown) {
@@ -148,8 +162,10 @@ export function serializeSelectedValues<TValue extends string>(
 }
 
 export function serializeGenreValues(values: Iterable<string>) {
-  return [...new Set(values)]
+  return [...values]
+    .map((value) => value.trim().toLowerCase())
     .filter(Boolean)
+    .filter((value, index, items) => items.indexOf(value) === index)
     .sort((left, right) => left.localeCompare(right))
 }
 

@@ -32,6 +32,7 @@ function App() {
       onSearchStateChange={(updater) =>
         navigate({
           replace: true,
+          resetScroll: false,
           search: (previousSearch) =>
             updater(previousSearch as LookupSearchState),
         })

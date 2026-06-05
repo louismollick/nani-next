@@ -142,10 +142,10 @@ export type Completeness = "complete" | "incomplete" | "unknown"
 
 export type OverlapResult = {
   entry: AnimeEntry
-  matchedJimaku: JimakuEntry
+  matchedJimaku: JimakuEntry | null
   alternates: MatchCandidate[]
-  matchScore: number
-  matchReason: MatchReason
+  matchScore: number | null
+  matchReason: MatchReason | null
   isAmbiguous: boolean
   completeness: Completeness
   matchedJpdb?: DatasetMatch<JpdbAnimeDifficultyEntry>

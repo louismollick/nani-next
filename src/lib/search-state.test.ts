@@ -35,7 +35,7 @@ describe("search-state", () => {
       titleQuery: "apothecary!!",
       selectedStatuses: ["CURRENT", "PLANNING"],
       selectedMediaStatuses: ["RELEASING"],
-      selectedGenres: ["Comedy", "Mystery"],
+      selectedGenres: ["comedy", "mystery"],
       selectedSubtitleAvailability: ["all", "some"],
       difficultyFilterMode: "learnNativelyLevel",
       learnNativelyLevelRange: [3, 12],
@@ -63,6 +63,38 @@ describe("search-state", () => {
       })
     ).toEqual({
       ...defaultLookupSearchState,
+    })
+  })
+
+  it("accepts case-insensitive enum search values", () => {
+    expect(
+      validateLookupSearch({
+        source: "MYANIMELIST",
+        selectedStatuses: ["current", "Planning"],
+        selectedMediaStatuses: ["releasing"],
+        selectedSubtitleAvailability: ["SOME"],
+        difficultyFilterMode: "learnnativelylevel",
+        sortBy: "STATUS",
+      })
+    ).toEqual({
+      ...defaultLookupSearchState,
+      source: "myanimelist",
+      selectedStatuses: ["CURRENT", "PLANNING"],
+      selectedMediaStatuses: ["RELEASING"],
+      selectedSubtitleAvailability: ["some"],
+      difficultyFilterMode: "learnNativelyLevel",
+      sortBy: "status",
+    })
+  })
+
+  it("canonicalizes genres to lowercase", () => {
+    expect(
+      canonicalizeLookupSearch({
+        ...defaultLookupSearchState,
+        selectedGenres: ["Mystery", " comedy ", "mystery"],
+      })
+    ).toEqual({
+      selectedGenres: ["comedy", "mystery"],
     })
   })
 })

@@ -76,11 +76,6 @@ export function buildOverlapResults(
 
   for (const entry of entries) {
     const matched = matchAnime(entry, jimakuEntries)
-
-    if (!matched) {
-      continue
-    }
-
     const matchedJpdb = matchJpdbAnimeDifficulty(entry, jpdbEntries)
     const matchedLearnNativelyBase = matchLearnNativelyAnimationLevel(
       entry,
@@ -105,12 +100,14 @@ export function buildOverlapResults(
 
     results.push({
       entry,
-      matchedJimaku: matched.matchedJimaku,
-      alternates: matched.alternates,
-      matchScore: matched.matchScore,
-      matchReason: matched.matchReason,
-      isAmbiguous: matched.isAmbiguous,
-      completeness: getCompleteness(entry, matched.matchedJimaku.fileCount),
+      matchedJimaku: matched?.matchedJimaku ?? null,
+      alternates: matched?.alternates ?? [],
+      matchScore: matched?.matchScore ?? null,
+      matchReason: matched?.matchReason ?? null,
+      isAmbiguous: matched?.isAmbiguous ?? false,
+      completeness: matched
+        ? getCompleteness(entry, matched.matchedJimaku.fileCount)
+        : "unknown",
       matchedJpdb: matchedJpdb ?? undefined,
       matchedLearnNatively,
     })
@@ -172,7 +169,7 @@ export async function findOverlap(
     username: trimmedUsername,
     fetchedAt,
     totalAnime: entryResult.length,
-    matchedCount: results.length,
+    matchedCount: results.filter((result) => result.matchedJimaku).length,
     results: sortResults(results),
   } satisfies LookupResponse
 

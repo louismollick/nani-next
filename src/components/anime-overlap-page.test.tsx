@@ -14,8 +14,8 @@ function successResponse(): LookupResponse {
     source: "anilist",
     username: "mollicl",
     fetchedAt: "2026-06-02T22:14:00.000Z",
-    totalAnime: 4,
-    matchedCount: 4,
+    totalAnime: 6,
+    matchedCount: 5,
     results: [
       {
         entry: {
@@ -356,6 +356,44 @@ function successResponse(): LookupResponse {
       {
         entry: {
           source: "anilist",
+          id: 6,
+          status: "PLANNING",
+          score: null,
+          progress: 0,
+          media: {
+            id: 16,
+            anilistId: 16,
+            myanimelistId: 116,
+            episodes: 13,
+            releasedEpisodes: 13,
+            averageScore: 72,
+            popularity: 9000,
+            status: "FINISHED",
+            genres: ["Adventure"],
+            format: "TV",
+            siteUrl: "https://anilist.co/anime/16",
+            synonyms: [],
+            coverImage: {
+              large: "https://example.com/six.jpg",
+              color: "#5fa67d",
+            },
+            title: {
+              primary: "No Match Show",
+              english: "No Match Show",
+              native: "一致なし",
+            },
+          },
+        },
+        matchedJimaku: null,
+        alternates: [],
+        matchScore: null,
+        matchReason: null,
+        isAmbiguous: false,
+        completeness: "unknown",
+      },
+      {
+        entry: {
+          source: "anilist",
           id: 5,
           status: "PLANNING",
           score: null,
@@ -541,7 +579,7 @@ describe("AnimeOverlapPage", () => {
     render(<ControlledPage />)
     fireEvent.click(screen.getByRole("button", { name: /find overlap/i }))
 
-    await screen.findByText("4 matches")
+    await screen.findByText(/entries scanned/i)
 
     expect(searchStateUpdates.length).toBeGreaterThan(0)
     expect(
@@ -578,6 +616,25 @@ describe("AnimeOverlapPage", () => {
     expect(screen.getAllByText("Dandadan").length).toBeGreaterThan(0)
   })
 
+  it("requires all selected genres to match", async () => {
+    await loadResults()
+
+    await screen.findByText("Genres")
+
+    await selectComboboxOption("Genres", "Drama")
+    await selectComboboxOption("Genres", "Mystery")
+
+    await waitFor(() => {
+      expect(screen.queryByText("Blue Box")).not.toBeInTheDocument()
+      expect(screen.queryByText("Orb")).not.toBeInTheDocument()
+      expect(screen.queryByText("Dandadan")).not.toBeInTheDocument()
+    })
+
+    expect(
+      screen.getAllByText("The Apothecary Diaries").length
+    ).toBeGreaterThan(0)
+  })
+
   it("does not expose not yet released as an airing status filter", async () => {
     await loadResults()
 
@@ -594,6 +651,7 @@ describe("AnimeOverlapPage", () => {
     expect(screen.queryByText("Orb")).not.toBeInTheDocument()
     expect(screen.queryByText("Dandadan")).not.toBeInTheDocument()
     expect(screen.queryByText("Empty Sub Show")).not.toBeInTheDocument()
+    expect(screen.queryByText("No Match Show")).not.toBeInTheDocument()
 
     await selectComboboxOption(
       "Japanese subtitle availability",
@@ -612,6 +670,7 @@ describe("AnimeOverlapPage", () => {
 
     await waitFor(() => {
       expect(screen.getAllByText("Empty Sub Show").length).toBeGreaterThan(0)
+      expect(screen.getAllByText("No Match Show").length).toBeGreaterThan(0)
     })
   })
 
@@ -668,6 +727,47 @@ describe("AnimeOverlapPage", () => {
         name: "Japanese subtitle availability",
       })
     ).toHaveTextContent("Any")
+  })
+
+  it("returns genres to any when the last option is cleared", async () => {
+    await loadResults()
+
+    await screen.findByText("Genres")
+
+    await selectComboboxOption("Genres", "Comedy")
+    expect(screen.getByRole("combobox", { name: "Genres" })).toHaveTextContent(
+      "Comedy"
+    )
+
+    await selectComboboxOption("Genres", "Comedy")
+    expect(screen.getByRole("combobox", { name: "Genres" })).toHaveTextContent(
+      "Any"
+    )
+
+    fireEvent.click(screen.getByRole("combobox", { name: "Genres" }))
+
+    expect(
+      await screen.findByRole("button", { name: "Comedy" })
+    ).toHaveTextContent("Comedy")
+  })
+
+  it("does not treat all selected genres as any", async () => {
+    await loadResults()
+
+    await screen.findByText("Genres")
+
+    await selectComboboxOption("Genres", "Comedy")
+    await selectComboboxOption("Genres", "Drama")
+    await selectComboboxOption("Genres", "Historical")
+    await selectComboboxOption("Genres", "Mystery")
+    await selectComboboxOption("Genres", "Romance")
+    await selectComboboxOption("Genres", "Sci-Fi")
+    await selectComboboxOption("Genres", "Sports")
+    await selectComboboxOption("Genres", "Supernatural")
+
+    expect(
+      screen.getByRole("combobox", { name: "Genres" })
+    ).not.toHaveTextContent("Any")
   })
 
   it("filters by english or romanized title query", async () => {

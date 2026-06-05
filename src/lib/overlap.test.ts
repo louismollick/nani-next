@@ -151,4 +151,16 @@ describe("buildOverlapResults", () => {
     expect(result?.matchedJpdb).toBeUndefined()
     expect(result?.matchedLearnNatively).toBeUndefined()
   })
+
+  it("keeps unmatched anime in the results", () => {
+    const [result] = buildOverlapResults([finishedEntry], [], [], [])
+
+    expect(result).toMatchObject({
+      matchedJimaku: null,
+      matchScore: null,
+      matchReason: null,
+      isAmbiguous: false,
+      completeness: "unknown",
+    })
+  })
 })

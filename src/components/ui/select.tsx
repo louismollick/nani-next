@@ -41,7 +41,7 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "flex w-fit items-center justify-between gap-1.5 rounded border border-slate-800 bg-slate-800/60 py-2 pr-3 pl-3.5 text-left text-[15px] font-normal whitespace-nowrap text-slate-100 shadow-none transition-colors outline-none select-none hover:bg-slate-800 focus-visible:border-sky-400/60 focus-visible:ring-3 focus-visible:ring-sky-400/15 disabled:cursor-not-allowed disabled:border-slate-800 disabled:bg-slate-900/70 disabled:text-slate-500 aria-invalid:border-rose-400/70 aria-invalid:ring-3 aria-invalid:ring-rose-400/15 data-placeholder:text-slate-500 data-[size=default]:h-10 data-[size=sm]:h-9 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "flex w-fit items-center justify-between gap-1.5 rounded border border-slate-800 bg-slate-800/60 py-2 pr-3 pl-3.5 text-left text-[15px] font-normal whitespace-nowrap text-slate-100 shadow-none transition-colors outline-none hover:bg-slate-800 focus-visible:border-sky-400/60 focus-visible:ring-3 focus-visible:ring-sky-400/15 disabled:cursor-not-allowed disabled:border-slate-800 disabled:bg-slate-900/70 disabled:text-slate-500 aria-invalid:border-rose-400/70 aria-invalid:ring-3 aria-invalid:ring-rose-400/15 data-placeholder:text-slate-500 data-[size=default]:h-10 data-[size=sm]:h-9 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className
       )}
       {...props}
@@ -117,7 +117,7 @@ function SelectItem({
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "relative flex w-full cursor-default items-center gap-1.5 rounded-sm py-2 pr-8 pl-3 text-[15px] text-slate-300 outline-hidden select-none hover:bg-slate-800 hover:text-slate-100 focus:bg-slate-800 focus:text-slate-100 data-disabled:pointer-events-none data-disabled:text-slate-600 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        "relative flex w-full cursor-default items-center gap-1.5 rounded-sm py-2 pr-8 pl-3 text-[15px] text-slate-300 outline-hidden hover:bg-slate-800 hover:text-slate-100 focus:bg-slate-800 focus:text-slate-100 data-disabled:pointer-events-none data-disabled:text-slate-600 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
         className
       )}
       {...props}

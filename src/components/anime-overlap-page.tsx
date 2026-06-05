@@ -208,6 +208,10 @@ function normalizeStoredRange(
   return normalizedRange
 }
 
+function normalizeGenreValue(value: string) {
+  return value.trim().toLowerCase()
+}
+
 function rangesEqual(left: NumericRange | null, right: NumericRange | null) {
   if (!left && !right) {
     return true
@@ -247,7 +251,7 @@ function formatDifficultyRangeValue(mode: DifficultyFilterMode, value: number) {
 function getSubtitleAvailability(
   result: OverlapResult
 ): SubtitleAvailabilityOption {
-  if (result.matchedJimaku.fileCount === 0) {
+  if (!result.matchedJimaku || result.matchedJimaku.fileCount === 0) {
     return "none"
   }
 
@@ -260,6 +264,10 @@ function getSubtitleAvailability(
 
 function getMediaStatusLabel(status: MediaStatus) {
   return status ? mediaStatusLabel[status] : "Unknown"
+}
+
+function getResultTitle(result: OverlapResult) {
+  return getEntryTitle(result.entry) ?? result.matchedJimaku?.name ?? "Unknown"
 }
 
 function LookupFreshness({ fetchedAt }: { fetchedAt: string }) {
@@ -399,6 +407,36 @@ function LearnNativelyLogo({ className }: { className?: string }) {
   )
 }
 
+function SourceLogo({
+  source,
+  className,
+}: {
+  source: AnimeSource
+  className?: string
+}) {
+  return (
+    <img
+      alt=""
+      aria-hidden="true"
+      className={className}
+      src={
+        source === "myanimelist"
+          ? "/myanimelist-favicon.svg"
+          : "/anilist-favicon-32x32.png"
+      }
+    />
+  )
+}
+
+function SourceOptionLabel({ source }: { source: AnimeSource }) {
+  return (
+    <span className="flex items-center gap-2">
+      <SourceLogo className="size-4 shrink-0 rounded-[3px]" source={source} />
+      <span>{getSourceLabel(source)}</span>
+    </span>
+  )
+}
+
 function DifficultyPosterBadge({ children }: { children: ReactNode }) {
   return (
     <Badge
@@ -451,14 +489,14 @@ function ResultCard({
     <Tooltip>
       <TooltipTrigger asChild>
         <button
-          className="group h-full w-full text-left"
+          className="group h-full w-full text-left select-text"
           onClick={onOpen}
           type="button"
         >
           <div className="space-y-3 transition duration-200 group-hover:-translate-y-1">
             <div className="relative aspect-[3/4] overflow-hidden rounded bg-slate-950 shadow-[0_18px_40px_-30px_rgba(0,0,0,0.95)]">
               <img
-                alt={getEntryTitle(result.entry) ?? result.matchedJimaku.name}
+                alt={getResultTitle(result)}
                 className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
                 src={result.entry.media.coverImage.large}
               />
@@ -469,11 +507,12 @@ function ResultCard({
                 <StatusDot result={result} />
                 <div className="min-w-0 flex-1 space-y-1">
                   <h3 className="line-clamp-2 h-10 text-sm font-medium leading-5 text-slate-400">
-                    {getEntryTitle(result.entry) ?? result.matchedJimaku.name}
+                    {getResultTitle(result)}
                   </h3>
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">
-                  {result.completeness === "incomplete" ? (
+                  {result.matchedJimaku &&
+                  result.completeness === "incomplete" ? (
                     <WarningDot
                       label="Incomplete Jimaku subtitles"
                       tone="red"
@@ -506,7 +545,7 @@ function ResultCard({
                 Jimaku Files
               </p>
               <p className="mt-1 font-medium">
-                {result.matchedJimaku.fileCount}
+                {result.matchedJimaku?.fileCount ?? 0}
               </p>
             </div>
           </div>
@@ -584,13 +623,13 @@ function ResultDialog({
           <>
             <DialogHeader>
               <DialogTitle className="pr-8 text-2xl text-slate-100">
-                {getEntryTitle(result.entry) ?? result.matchedJimaku.name}
+                {getResultTitle(result)}
               </DialogTitle>
             </DialogHeader>
             <div className="grid gap-6 md:grid-cols-[180px_minmax(0,1fr)]">
               <div>
                 <img
-                  alt={getEntryTitle(result.entry) ?? result.matchedJimaku.name}
+                  alt={getResultTitle(result)}
                   className="aspect-[3/4] w-full rounded-2xl object-cover shadow-lg"
                   src={result.entry.media.coverImage.large}
                 />
@@ -601,7 +640,8 @@ function ResultDialog({
                     <StatusDot result={result} />
                     <span>{statusLabel[result.entry.status]}</span>
                   </div>
-                  {result.completeness === "incomplete" ? (
+                  {result.matchedJimaku &&
+                  result.completeness === "incomplete" ? (
                     <div className="inline-flex items-center gap-2 rounded-full border border-rose-500/20 bg-rose-500/10 px-3 py-1 text-sm text-rose-200">
                       <WarningDot
                         label="Incomplete Jimaku subtitles"
@@ -633,27 +673,38 @@ function ResultDialog({
                       </a>
                     </Button>
                   </div>
-                  <div className="flex items-start justify-between gap-3">
+                  {result.matchedJimaku ? (
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+                          Jimaku
+                        </p>
+                        <p className="text-sm font-medium text-slate-100">
+                          {result.matchedJimaku.name}
+                        </p>
+                      </div>
+                      <Button asChild size="sm" variant="outline">
+                        <a
+                          className="border-slate-700 bg-slate-950 text-slate-100 hover:bg-slate-900"
+                          href={result.matchedJimaku.url}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          Open
+                          <ExternalLink />
+                        </a>
+                      </Button>
+                    </div>
+                  ) : (
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
                         Jimaku
                       </p>
                       <p className="text-sm font-medium text-slate-100">
-                        {result.matchedJimaku.name}
+                        No Jimaku match
                       </p>
                     </div>
-                    <Button asChild size="sm" variant="outline">
-                      <a
-                        className="border-slate-700 bg-slate-950 text-slate-100 hover:bg-slate-900"
-                        href={result.matchedJimaku.url}
-                        rel="noreferrer"
-                        target="_blank"
-                      >
-                        Open
-                        <ExternalLink />
-                      </a>
-                    </Button>
-                  </div>
+                  )}
                 </div>
                 <div className="grid gap-5 text-sm text-slate-300 sm:grid-cols-2">
                   <div>
@@ -669,7 +720,7 @@ function ResultDialog({
                       Jimaku Files
                     </p>
                     <p className="mt-2 text-lg font-semibold text-slate-100">
-                      {result.matchedJimaku.fileCount}
+                      {result.matchedJimaku?.fileCount ?? 0}
                     </p>
                   </div>
                 </div>
@@ -924,10 +975,17 @@ export function AnimeOverlapPage({
   const hasResultsState = lookupState?.ok === true
   const availableGenres = lookupState?.ok
     ? [
-        ...new Set(
-          lookupState.results.flatMap((result) => result.entry.media.genres)
-        ),
-      ].sort((left, right) => left.localeCompare(right))
+        ...new Map(
+          lookupState.results
+            .flatMap((result) => result.entry.media.genres)
+            .map((genre) => [normalizeGenreValue(genre), genre] as const)
+        ).entries(),
+      ]
+        .map(([value, label]) => ({
+          label,
+          value,
+        }))
+        .sort((left, right) => left.label.localeCompare(right.label))
     : []
   const availableJpdbDifficultyBounds = lookupState?.ok
     ? getNumericBounds(
@@ -1077,8 +1135,10 @@ export function AnimeOverlapPage({
 
           if (
             selectedGenres.size > 0 &&
-            !result.entry.media.genres.some((genre) =>
-              selectedGenres.has(genre)
+            ![...selectedGenres].every((genre) =>
+              result.entry.media.genres
+                .map((resultGenre) => normalizeGenreValue(resultGenre))
+                .includes(genre)
             )
           ) {
             return false
@@ -1200,12 +1260,14 @@ export function AnimeOverlapPage({
                   aria-label="Source"
                   className="h-12 w-full text-base data-[size=default]:h-12 sm:w-44"
                 >
-                  <SelectValue />
+                  <SelectValue>
+                    <SourceOptionLabel source={activeSearchState.source} />
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {animeSources.map((source) => (
                     <SelectItem key={source} value={source}>
-                      {getSourceLabel(source)}
+                      <SourceOptionLabel source={source} />
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1250,10 +1312,6 @@ export function AnimeOverlapPage({
             ) : null}
             {lookupState?.ok ? (
               <div className="flex flex-wrap items-center justify-center gap-3 text-sm text-slate-400">
-                <span className="rounded-full border border-slate-800 bg-slate-900 px-3 py-1">
-                  {lookupState.username}
-                </span>
-                <span>{lookupState.matchedCount} matches</span>
                 <span className="flex flex-wrap items-center justify-center gap-1.5">
                   <span>{lookupState.totalAnime} entries scanned</span>
                   <span aria-hidden="true">•</span>
@@ -1314,7 +1372,6 @@ export function AnimeOverlapPage({
                       value: option,
                     }))}
                     placeholder="Any"
-                    placeholderWhenAllSelected
                     searchPlaceholder="Search subtitle availability..."
                     selectedValues={selectedSubtitleAvailability}
                   />
@@ -1340,7 +1397,6 @@ export function AnimeOverlapPage({
                       value: status,
                     }))}
                     placeholder="Any"
-                    placeholderWhenAllSelected
                     searchPlaceholder="Search watch status..."
                     selectedValues={selectedStatuses}
                   />
@@ -1366,7 +1422,6 @@ export function AnimeOverlapPage({
                       value: status,
                     }))}
                     placeholder="Any"
-                    placeholderWhenAllSelected
                     searchPlaceholder="Search airing status..."
                     selectedValues={selectedMediaStatuses}
                   />
@@ -1387,11 +1442,12 @@ export function AnimeOverlapPage({
                         }))
                       }
                       options={availableGenres.map((genre) => ({
-                        label: genre,
-                        value: genre,
+                        label: genre.label,
+                        value: genre.value,
                       }))}
                       placeholder="Any"
                       searchPlaceholder="Search genres..."
+                      selectionMode="intersection"
                       selectedValues={selectedGenres}
                     />
                   </div>
@@ -1565,17 +1621,13 @@ export function AnimeOverlapPage({
                   <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-4 sm:grid-cols-[repeat(auto-fill,minmax(190px,1fr))] xl:grid-cols-[repeat(auto-fill,minmax(210px,1fr))]">
                     {visibleResults.map((result) => (
                       <ResultCard
-                        key={`${result.entry.source}-${result.entry.id}-${result.matchedJimaku.id}`}
+                        key={`${result.entry.source}-${result.entry.id}`}
                         onOpen={() => setSelectedResult(result)}
                         result={result}
                       />
                     ))}
                   </div>
-                ) : (
-                  <div className="flex min-h-[360px] items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-900/45 p-8 text-center text-slate-500">
-                    No results match the active filters.
-                  </div>
-                )}
+                ) : null}
               </section>
             </div>
           ) : null}

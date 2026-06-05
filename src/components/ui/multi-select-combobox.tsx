@@ -21,9 +21,9 @@ type MultiSelectComboboxProps = {
   emptyText?: string
   onSelectedValuesChange: (selectedValues: Set<string>) => void
   options: Option[]
-  placeholderWhenAllSelected?: boolean
   placeholder?: string
   searchPlaceholder?: string
+  selectionMode?: "intersection" | "union"
   selectedValues: Set<string>
 }
 
@@ -32,9 +32,9 @@ export function MultiSelectCombobox({
   emptyText = "No options found.",
   onSelectedValuesChange,
   options,
-  placeholderWhenAllSelected = false,
   placeholder = "Any",
   searchPlaceholder = "Search...",
+  selectionMode = "union",
   selectedValues,
 }: MultiSelectComboboxProps) {
   const [open, setOpen] = useState(false)
@@ -46,12 +46,15 @@ export function MultiSelectCombobox({
     option.label.toLowerCase().includes(query.trim().toLowerCase())
   )
   const showPlaceholder =
-    selectedOptions.length === 0 ||
-    (placeholderWhenAllSelected &&
-      selectedOptions.length === options.length &&
-      options.length > 0)
+    selectionMode === "intersection"
+      ? selectedOptions.length === 0
+      : selectedOptions.length === options.length && options.length > 0
 
   function normalizeSelectedValues(nextSelectedValues: Set<string>) {
+    if (selectionMode === "intersection") {
+      return nextSelectedValues
+    }
+
     if (nextSelectedValues.size === 0) {
       return new Set(options.map((option) => option.value))
     }
@@ -79,7 +82,7 @@ export function MultiSelectCombobox({
         <Button
           aria-label={ariaLabel}
           aria-expanded={open}
-          className="h-auto min-h-10 w-full justify-between rounded border-slate-800 bg-slate-800/60 pr-3 pl-3.5 py-1 text-left text-[15px] font-normal whitespace-normal text-slate-100 shadow-none hover:bg-slate-800 hover:text-slate-100 aria-expanded:bg-slate-800 aria-expanded:text-slate-100"
+          className="h-auto min-h-10 w-full justify-between rounded border-slate-800 bg-slate-800/60 pr-3 pl-3.5 py-1 text-left text-[15px] font-normal whitespace-normal text-slate-100 shadow-none select-text hover:bg-slate-800 hover:text-slate-100 aria-expanded:bg-slate-800 aria-expanded:text-slate-100"
           role="combobox"
           variant="outline"
         >
@@ -128,7 +131,7 @@ export function MultiSelectCombobox({
 
               return (
                 <button
-                  className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-800 hover:text-slate-100"
+                  className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-sm text-slate-300 select-text hover:bg-slate-800 hover:text-slate-100"
                   key={option.value}
                   onClick={() => {
                     const nextSelectedValues = new Set(selectedValues)
