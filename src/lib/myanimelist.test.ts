@@ -1,11 +1,16 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 
-const { fetchAniListIdsForMyAnimeListIdsMock } = vi.hoisted(() => ({
+const {
+  fetchAniListIdsForMyAnimeListIdsMock,
+  fetchReleasedEpisodesForAniListIdsMock,
+} = vi.hoisted(() => ({
   fetchAniListIdsForMyAnimeListIdsMock: vi.fn(),
+  fetchReleasedEpisodesForAniListIdsMock: vi.fn(),
 }))
 
 vi.mock("@/lib/anilist-id-map", () => ({
   fetchAniListIdsForMyAnimeListIds: fetchAniListIdsForMyAnimeListIdsMock,
+  fetchReleasedEpisodesForAniListIds: fetchReleasedEpisodesForAniListIdsMock,
 }))
 
 import { fetchMyAnimeListEntries } from "@/lib/myanimelist"
@@ -16,6 +21,7 @@ const originalClientId = process.env.MYANIMELIST_CLIENT_ID
 afterEach(() => {
   global.fetch = originalFetch
   fetchAniListIdsForMyAnimeListIdsMock.mockReset()
+  fetchReleasedEpisodesForAniListIdsMock.mockReset()
 
   if (originalClientId === undefined) {
     delete process.env.MYANIMELIST_CLIENT_ID
@@ -33,6 +39,12 @@ describe("fetchMyAnimeListEntries", () => {
       new Map([
         [101, 201],
         [102, 202],
+      ])
+    )
+    fetchReleasedEpisodesForAniListIdsMock.mockResolvedValue(
+      new Map([
+        [201, 8],
+        [202, 25],
       ])
     )
 
@@ -123,6 +135,9 @@ describe("fetchMyAnimeListEntries", () => {
     expect(Array.isArray(result) ? result[0].media.popularity : null).toBe(
       500000
     )
+    expect(
+      Array.isArray(result) ? result[0].media.releasedEpisodes : null
+    ).toBe(8)
     expect(Array.isArray(result) ? result[0].status : null).toBe("CURRENT")
   })
 

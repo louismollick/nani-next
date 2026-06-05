@@ -1,4 +1,7 @@
-import { fetchAniListIdsForMyAnimeListIds } from "@/lib/anilist-id-map"
+import {
+  fetchAniListIdsForMyAnimeListIds,
+  fetchReleasedEpisodesForAniListIds,
+} from "@/lib/anilist-id-map"
 import type {
   AnimeEntry,
   LookupResponse,
@@ -164,47 +167,68 @@ export async function fetchMyAnimeListEntries(
     )
 
     let aniListIdsByMyAnimeListId = new Map<number, number | null>()
+    let releasedEpisodesByAniListId = new Map<number, number | null>()
 
     try {
       aniListIdsByMyAnimeListId = await fetchAniListIdsForMyAnimeListIds(
         filteredEntries.map((entry) => entry.node.id)
       )
+
+      const aniListIds = [...aniListIdsByMyAnimeListId.values()].filter(
+        (id): id is number => typeof id === "number"
+      )
+
+      releasedEpisodesByAniListId =
+        await fetchReleasedEpisodesForAniListIds(aniListIds)
     } catch {
       aniListIdsByMyAnimeListId = new Map<number, number | null>()
+      releasedEpisodesByAniListId = new Map<number, number | null>()
     }
 
-    return filteredEntries.map((entry) => ({
-      source: "myanimelist" as const,
-      id: entry.node.id,
-      status: normalizeMyAnimeListWatchStatus(entry.list_status.status),
-      score: entry.list_status.score || null,
-      progress: entry.list_status.num_episodes_watched || null,
-      media: {
+    return filteredEntries.map((entry) => {
+      const mediaStatus = normalizeMyAnimeListMediaStatus(entry.node.status)
+      const anilistId = aniListIdsByMyAnimeListId.get(entry.node.id) ?? null
+
+      return {
+        source: "myanimelist" as const,
         id: entry.node.id,
-        anilistId: aniListIdsByMyAnimeListId.get(entry.node.id) ?? null,
-        myanimelistId: entry.node.id,
-        episodes: entry.node.num_episodes ?? null,
-        averageScore: toAverageScore(entry.node.mean),
-        popularity: entry.node.num_list_users ?? null,
-        status: normalizeMyAnimeListMediaStatus(entry.node.status),
-        genres: entry.node.genres?.map((genre) => genre.name) ?? [],
-        format: entry.node.media_type?.toUpperCase() ?? null,
-        siteUrl: toProviderUrl(entry.node.id),
-        synonyms: entry.node.alternative_titles?.synonyms ?? [],
-        coverImage: {
-          large:
-            entry.node.main_picture?.large ??
-            entry.node.main_picture?.medium ??
-            "",
-          color: null,
+        status: normalizeMyAnimeListWatchStatus(entry.list_status.status),
+        score: entry.list_status.score || null,
+        progress: entry.list_status.num_episodes_watched || null,
+        media: {
+          id: entry.node.id,
+          anilistId,
+          myanimelistId: entry.node.id,
+          episodes: entry.node.num_episodes ?? null,
+          releasedEpisodes:
+            (anilistId !== null
+              ? releasedEpisodesByAniListId.get(anilistId)
+              : null) ??
+            (mediaStatus === "FINISHED"
+              ? (entry.node.num_episodes ?? null)
+              : null),
+          averageScore: toAverageScore(entry.node.mean),
+          popularity: entry.node.num_list_users ?? null,
+          status: mediaStatus,
+          genres: entry.node.genres?.map((genre) => genre.name) ?? [],
+          format: entry.node.media_type?.toUpperCase() ?? null,
+          siteUrl: toProviderUrl(entry.node.id),
+          synonyms: entry.node.alternative_titles?.synonyms ?? [],
+          coverImage: {
+            large:
+              entry.node.main_picture?.large ??
+              entry.node.main_picture?.medium ??
+              "",
+            color: null,
+          },
+          title: {
+            primary: entry.node.title,
+            english: entry.node.alternative_titles?.en || null,
+            native: entry.node.alternative_titles?.ja || null,
+          },
         },
-        title: {
-          primary: entry.node.title,
-          english: entry.node.alternative_titles?.en || null,
-          native: entry.node.alternative_titles?.ja || null,
-        },
-      },
-    }))
+      }
+    })
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "RATE_LIMITED") {

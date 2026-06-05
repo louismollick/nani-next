@@ -1,6 +1,11 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { useState } from "react"
 import { describe, expect, it, vi } from "vitest"
 import { AnimeOverlapPage } from "@/components/anime-overlap-page"
+import {
+  defaultLookupSearchState,
+  type LookupSearchState,
+} from "@/lib/search-state"
 import type { LookupResponse } from "@/lib/types"
 
 function successResponse(): LookupResponse {
@@ -24,6 +29,7 @@ function successResponse(): LookupResponse {
             anilistId: 11,
             myanimelistId: 111,
             episodes: 12,
+            releasedEpisodes: 12,
             averageScore: 88,
             popularity: 15000,
             status: "FINISHED",
@@ -102,6 +108,7 @@ function successResponse(): LookupResponse {
             anilistId: 12,
             myanimelistId: 112,
             episodes: 24,
+            releasedEpisodes: 24,
             averageScore: 90,
             popularity: 45000,
             status: "FINISHED",
@@ -180,6 +187,7 @@ function successResponse(): LookupResponse {
             anilistId: 13,
             myanimelistId: 113,
             episodes: 24,
+            releasedEpisodes: 24,
             averageScore: 95,
             popularity: 55000,
             status: "FINISHED",
@@ -259,6 +267,7 @@ function successResponse(): LookupResponse {
             anilistId: null,
             myanimelistId: null,
             episodes: 12,
+            releasedEpisodes: null,
             averageScore: 84,
             popularity: 70000,
             status: "RELEASING",
@@ -356,6 +365,7 @@ function successResponse(): LookupResponse {
             anilistId: 15,
             myanimelistId: 115,
             episodes: 12,
+            releasedEpisodes: 12,
             averageScore: 65,
             popularity: 5000,
             status: "FINISHED",
@@ -489,6 +499,47 @@ describe("AnimeOverlapPage", () => {
     )
 
     dateNowSpy.mockRestore()
+  })
+
+  it("does not write full difficulty bounds back into search state after lookup", async () => {
+    const lookup = vi.fn().mockResolvedValue(successResponse())
+    const searchStateUpdates: LookupSearchState[] = []
+
+    function ControlledPage() {
+      const [searchState, setSearchState] = useState<LookupSearchState>({
+        ...defaultLookupSearchState,
+        username: "mollicl",
+      })
+
+      return (
+        <AnimeOverlapPage
+          lookup={lookup}
+          onSearchStateChange={(updater) =>
+            setSearchState((previousState) => {
+              const nextState = updater(previousState)
+              searchStateUpdates.push(nextState)
+              return nextState
+            })
+          }
+          searchState={searchState}
+        />
+      )
+    }
+
+    render(<ControlledPage />)
+    fireEvent.click(screen.getByRole("button", { name: /find overlap/i }))
+
+    await screen.findByText("4 matches")
+
+    expect(searchStateUpdates.length).toBeGreaterThan(0)
+    expect(
+      searchStateUpdates.every(
+        (state) =>
+          state.jpdbDifficultyRange === null &&
+          state.learnNativelyLevelRange === null &&
+          state.learnNativelyJlptRange === null
+      )
+    ).toBe(true)
   })
 
   it("filters by airing status and genre", async () => {

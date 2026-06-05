@@ -14,6 +14,11 @@ type MappingResponse = {
     {
       id: number | null
       idMal: number | null
+      episodes?: number | null
+      status?: "FINISHED" | "RELEASING" | "CANCELLED" | "HIATUS" | null
+      nextAiringEpisode?: {
+        episode: number | null
+      } | null
     } | null
   >
   errors?: Array<{
@@ -38,22 +43,17 @@ function getRetryDelayMs(response: Response, attempt: number) {
   return retryBaseDelayMs * 2 ** attempt
 }
 
-async function fetchMappings(
+async function fetchMediaEntries(
   ids: number[],
   key: "id" | "idMal",
+  selection = "id idMal",
   options: FetchMappingsOptions = {}
 ) {
   if (ids.length === 0) {
-    return new Map<
-      number,
-      { anilistId: number | null; myanimelistId: number | null }
-    >()
+    return new Map<number, NonNullable<MappingResponse["data"]>[string]>()
   }
 
-  const result = new Map<
-    number,
-    { anilistId: number | null; myanimelistId: number | null }
-  >()
+  const result = new Map<number, NonNullable<MappingResponse["data"]>[string]>()
 
   for (let index = 0; index < ids.length; index += batchSize) {
     const batch = ids.slice(index, index + batchSize)
@@ -67,7 +67,7 @@ async function fetchMappings(
     const fields = batch
       .map(
         (_, batchIndex) =>
-          `entry${batchIndex}: Media(${key}: $value${batchIndex}, type: ANIME) { id idMal }`
+          `entry${batchIndex}: Media(${key}: $value${batchIndex}, type: ANIME) { ${selection} }`
       )
       .join("\n")
 
@@ -109,10 +109,7 @@ async function fetchMappings(
     for (const [batchIndex, id] of batch.entries()) {
       const mapping = payload.data?.[`entry${batchIndex}`] ?? null
 
-      result.set(id, {
-        anilistId: mapping?.id ?? null,
-        myanimelistId: mapping?.idMal ?? null,
-      })
+      result.set(id, mapping)
     }
 
     options.onProgress?.({
@@ -126,6 +123,24 @@ async function fetchMappings(
   }
 
   return result
+}
+
+async function fetchMappings(
+  ids: number[],
+  key: "id" | "idMal",
+  options: FetchMappingsOptions = {}
+) {
+  const result = await fetchMediaEntries(ids, key, "id idMal", options)
+
+  return new Map(
+    [...result.entries()].map(([id, mapping]) => [
+      id,
+      {
+        anilistId: mapping?.id ?? null,
+        myanimelistId: mapping?.idMal ?? null,
+      },
+    ])
+  )
 }
 
 export async function fetchMyAnimeListIdsForAniListIds(
@@ -151,5 +166,34 @@ export async function fetchAniListIdsForMyAnimeListIds(
       myanimelistId,
       mapping.anilistId,
     ])
+  )
+}
+
+export async function fetchReleasedEpisodesForAniListIds(
+  ids: number[],
+  options?: FetchMappingsOptions
+) {
+  const result = await fetchMediaEntries(
+    ids,
+    "id",
+    "id status episodes nextAiringEpisode { episode }",
+    options
+  )
+
+  return new Map(
+    [...result.entries()].map(([anilistId, mapping]) => {
+      if (mapping?.status === "FINISHED") {
+        return [anilistId, mapping.episodes ?? null]
+      }
+
+      if (
+        mapping?.status === "RELEASING" &&
+        typeof mapping.nextAiringEpisode?.episode === "number"
+      ) {
+        return [anilistId, Math.max(mapping.nextAiringEpisode.episode - 1, 0)]
+      }
+
+      return [anilistId, null]
+    })
   )
 }

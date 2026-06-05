@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
   fetchAniListIdsForMyAnimeListIds,
   fetchMyAnimeListIdsForAniListIds,
+  fetchReleasedEpisodesForAniListIds,
 } from "@/lib/anilist-id-map"
 
 const originalFetch = global.fetch
@@ -87,5 +88,38 @@ describe("anilist id map", () => {
     await fetchMyAnimeListIdsForAniListIds([1, 3], { onProgress })
 
     expect(onProgress).toHaveBeenCalledWith({ completed: 2, total: 2 })
+  })
+
+  it("derives released episode counts from AniList media status", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: new Headers(),
+      json: async () => ({
+        data: {
+          entry0: {
+            id: 1,
+            status: "RELEASING",
+            episodes: 12,
+            nextAiringEpisode: {
+              episode: 9,
+            },
+          },
+          entry1: {
+            id: 2,
+            status: "FINISHED",
+            episodes: 24,
+            nextAiringEpisode: null,
+          },
+        },
+      }),
+    }) as typeof fetch
+
+    await expect(fetchReleasedEpisodesForAniListIds([1, 2])).resolves.toEqual(
+      new Map([
+        [1, 8],
+        [2, 24],
+      ])
+    )
   })
 })

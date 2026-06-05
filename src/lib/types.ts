@@ -55,6 +55,7 @@ export type AnimeMedia = {
   anilistId: number | null
   myanimelistId: number | null
   episodes: number | null
+  releasedEpisodes: number | null
   averageScore: number | null
   popularity: number | null
   status: MediaStatus

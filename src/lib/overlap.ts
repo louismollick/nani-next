@@ -28,16 +28,27 @@ import type {
 } from "@/lib/types"
 
 export function getCompleteness(entry: AnimeEntry, fileCount: number) {
-  if (
-    entry.media.status !== "FINISHED" ||
-    typeof entry.media.episodes !== "number"
-  ) {
-    return "unknown" as const
+  if (entry.media.status === "FINISHED") {
+    if (typeof entry.media.episodes !== "number") {
+      return "unknown" as const
+    }
+
+    return fileCount >= entry.media.episodes
+      ? ("complete" as const)
+      : ("incomplete" as const)
   }
 
-  return fileCount >= entry.media.episodes
-    ? ("complete" as const)
-    : ("incomplete" as const)
+  if (entry.media.status === "RELEASING") {
+    if (typeof entry.media.releasedEpisodes !== "number") {
+      return "unknown" as const
+    }
+
+    return fileCount >= entry.media.releasedEpisodes
+      ? ("complete" as const)
+      : ("incomplete" as const)
+  }
+
+  return "unknown" as const
 }
 
 export function sortResults(results: OverlapResult[]) {

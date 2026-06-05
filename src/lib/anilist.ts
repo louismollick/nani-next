@@ -23,6 +23,9 @@ const mediaListCollectionQuery = `
             averageScore
             popularity
             status
+            nextAiringEpisode {
+              episode
+            }
             genres
             format
             siteUrl
@@ -61,6 +64,9 @@ type AniListGraphQlEntry = {
     averageScore: number | null
     popularity: number | null
     status: MediaStatus
+    nextAiringEpisode?: {
+      episode: number | null
+    } | null
     genres: string[]
     format: string | null
     siteUrl: string
@@ -95,6 +101,26 @@ function normalizeAniListWatchStatus(
   status: AniListGraphQlEntry["status"]
 ): WatchStatus {
   return status === "REPEATING" ? "CURRENT" : status
+}
+
+function getReleasedEpisodes(
+  media: AniListGraphQlEntry["media"]
+): number | null {
+  if (media.status === "FINISHED") {
+    return media.episodes
+  }
+
+  if (media.status !== "RELEASING") {
+    return null
+  }
+
+  const nextEpisode = media.nextAiringEpisode?.episode
+
+  if (typeof nextEpisode === "number") {
+    return Math.max(nextEpisode - 1, 0)
+  }
+
+  return null
 }
 
 export async function fetchAniListEntries(
@@ -179,6 +205,7 @@ export async function fetchAniListEntries(
         anilistId: entry.media.id,
         myanimelistId: entry.media.idMal,
         episodes: entry.media.episodes,
+        releasedEpisodes: getReleasedEpisodes(entry.media),
         averageScore: entry.media.averageScore,
         popularity: entry.media.popularity,
         status: entry.media.status,

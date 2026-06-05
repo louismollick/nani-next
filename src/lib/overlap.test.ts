@@ -18,6 +18,7 @@ const finishedEntry: AnimeEntry = {
     anilistId: 201,
     myanimelistId: 301,
     episodes: 12,
+    releasedEpisodes: 12,
     averageScore: 87,
     popularity: 55000,
     status: "FINISHED",
@@ -81,14 +82,46 @@ describe("getCompleteness", () => {
     expect(getCompleteness(finishedEntry, 8)).toBe("incomplete")
   })
 
-  it("returns unknown when AniList episode count should not be judged", () => {
+  it("returns complete for releasing anime when files cover aired episodes", () => {
     expect(
       getCompleteness(
         {
           ...finishedEntry,
           media: {
             ...finishedEntry.media,
-            episodes: null,
+            releasedEpisodes: 8,
+            status: "RELEASING",
+          },
+        },
+        8
+      )
+    ).toBe("complete")
+  })
+
+  it("returns incomplete for releasing anime when files lag aired episodes", () => {
+    expect(
+      getCompleteness(
+        {
+          ...finishedEntry,
+          media: {
+            ...finishedEntry.media,
+            releasedEpisodes: 8,
+            status: "RELEASING",
+          },
+        },
+        7
+      )
+    ).toBe("incomplete")
+  })
+
+  it("returns unknown when released episode count should not be judged", () => {
+    expect(
+      getCompleteness(
+        {
+          ...finishedEntry,
+          media: {
+            ...finishedEntry.media,
+            releasedEpisodes: null,
             status: "RELEASING",
           },
         },

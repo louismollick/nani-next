@@ -189,6 +189,23 @@ function normalizeRange(
   ] as NumericRange
 }
 
+function normalizeStoredRange(
+  range: NumericRange | null,
+  bounds: NumericRange | null
+): NumericRange | null {
+  if (!range) {
+    return null
+  }
+
+  const normalizedRange = normalizeRange(range, bounds)
+
+  if (!normalizedRange || (bounds && rangesEqual(normalizedRange, bounds))) {
+    return null
+  }
+
+  return normalizedRange
+}
+
 function rangesEqual(left: NumericRange | null, right: NumericRange | null) {
   if (!left && !right) {
     return true
@@ -933,15 +950,15 @@ export function AnimeOverlapPage({
 
   useEffect(() => {
     updateSearchState((previousState) => {
-      const nextJpdbDifficultyRange = normalizeRange(
+      const nextJpdbDifficultyRange = normalizeStoredRange(
         previousState.jpdbDifficultyRange,
         availableJpdbDifficultyBounds
       )
-      const nextLearnNativelyLevelRange = normalizeRange(
+      const nextLearnNativelyLevelRange = normalizeStoredRange(
         previousState.learnNativelyLevelRange,
         availableLearnNativelyLevelBounds
       )
-      const nextLearnNativelyJlptRange = normalizeRange(
+      const nextLearnNativelyJlptRange = normalizeStoredRange(
         previousState.learnNativelyJlptRange,
         availableLearnNativelyJlptBounds
       )
@@ -991,12 +1008,21 @@ export function AnimeOverlapPage({
           : null
   const activeDifficultyRange =
     activeSearchState.difficultyFilterMode === "jpdbAverageDifficulty"
-      ? activeSearchState.jpdbDifficultyRange
+      ? (normalizeRange(
+          activeSearchState.jpdbDifficultyRange,
+          availableJpdbDifficultyBounds
+        ) ?? availableJpdbDifficultyBounds)
       : activeSearchState.difficultyFilterMode === "learnNativelyLevel"
-        ? activeSearchState.learnNativelyLevelRange
+        ? (normalizeRange(
+            activeSearchState.learnNativelyLevelRange,
+            availableLearnNativelyLevelBounds
+          ) ?? availableLearnNativelyLevelBounds)
         : activeSearchState.difficultyFilterMode ===
             "learnNativelyJlptEquivalent"
-          ? activeSearchState.learnNativelyJlptRange
+          ? (normalizeRange(
+              activeSearchState.learnNativelyJlptRange,
+              availableLearnNativelyJlptBounds
+            ) ?? availableLearnNativelyJlptBounds)
           : null
   const activeLookupIdentity = getLookupIdentity(activeSearchState)
 
@@ -1051,31 +1077,36 @@ export function AnimeOverlapPage({
           if (
             activeSearchState.difficultyFilterMode === "jpdbAverageDifficulty"
           ) {
-            if (!result.matchedJpdb || !activeSearchState.jpdbDifficultyRange) {
+            const effectiveRange =
+              normalizeRange(
+                activeSearchState.jpdbDifficultyRange,
+                availableJpdbDifficultyBounds
+              ) ?? availableJpdbDifficultyBounds
+
+            if (!result.matchedJpdb || !effectiveRange) {
               return false
             }
 
             return (
-              result.matchedJpdb.entry.averageDifficulty >=
-                activeSearchState.jpdbDifficultyRange[0] &&
-              result.matchedJpdb.entry.averageDifficulty <=
-                activeSearchState.jpdbDifficultyRange[1]
+              result.matchedJpdb.entry.averageDifficulty >= effectiveRange[0] &&
+              result.matchedJpdb.entry.averageDifficulty <= effectiveRange[1]
             )
           }
 
           if (activeSearchState.difficultyFilterMode === "learnNativelyLevel") {
-            if (
-              !result.matchedLearnNatively ||
-              !activeSearchState.learnNativelyLevelRange
-            ) {
+            const effectiveRange =
+              normalizeRange(
+                activeSearchState.learnNativelyLevelRange,
+                availableLearnNativelyLevelBounds
+              ) ?? availableLearnNativelyLevelBounds
+
+            if (!result.matchedLearnNatively || !effectiveRange) {
               return false
             }
 
             return (
-              result.matchedLearnNatively.levelNumber >=
-                activeSearchState.learnNativelyLevelRange[0] &&
-              result.matchedLearnNatively.levelNumber <=
-                activeSearchState.learnNativelyLevelRange[1]
+              result.matchedLearnNatively.levelNumber >= effectiveRange[0] &&
+              result.matchedLearnNatively.levelNumber <= effectiveRange[1]
             )
           }
 
@@ -1083,10 +1114,13 @@ export function AnimeOverlapPage({
             activeSearchState.difficultyFilterMode ===
             "learnNativelyJlptEquivalent"
           ) {
-            if (
-              !result.matchedLearnNatively ||
-              !activeSearchState.learnNativelyJlptRange
-            ) {
+            const effectiveRange =
+              normalizeRange(
+                activeSearchState.learnNativelyJlptRange,
+                availableLearnNativelyJlptBounds
+              ) ?? availableLearnNativelyJlptBounds
+
+            if (!result.matchedLearnNatively || !effectiveRange) {
               return false
             }
 
@@ -1095,8 +1129,8 @@ export function AnimeOverlapPage({
             )
 
             return (
-              equivalentIndex >= activeSearchState.learnNativelyJlptRange[0] &&
-              equivalentIndex <= activeSearchState.learnNativelyJlptRange[1]
+              equivalentIndex >= effectiveRange[0] &&
+              equivalentIndex <= effectiveRange[1]
             )
           }
 
@@ -1395,17 +1429,26 @@ export function AnimeOverlapPage({
                               jpdbDifficultyRange:
                                 previousState.difficultyFilterMode ===
                                 "jpdbAverageDifficulty"
-                                  ? normalizedNextRange
+                                  ? normalizeStoredRange(
+                                      normalizedNextRange,
+                                      availableJpdbDifficultyBounds
+                                    )
                                   : previousState.jpdbDifficultyRange,
                               learnNativelyLevelRange:
                                 previousState.difficultyFilterMode ===
                                 "learnNativelyLevel"
-                                  ? normalizedNextRange
+                                  ? normalizeStoredRange(
+                                      normalizedNextRange,
+                                      availableLearnNativelyLevelBounds
+                                    )
                                   : previousState.learnNativelyLevelRange,
                               learnNativelyJlptRange:
                                 previousState.difficultyFilterMode ===
                                 "learnNativelyJlptEquivalent"
-                                  ? normalizedNextRange
+                                  ? normalizeStoredRange(
+                                      normalizedNextRange,
+                                      availableLearnNativelyJlptBounds
+                                    )
                                   : previousState.learnNativelyJlptRange,
                             }))
                           }}

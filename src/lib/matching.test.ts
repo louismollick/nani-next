@@ -22,6 +22,7 @@ const baseAniListEntry: AnimeEntry = {
     anilistId: 101,
     myanimelistId: 201,
     episodes: 12,
+    releasedEpisodes: 12,
     averageScore: 80,
     popularity: 25000,
     status: "FINISHED",
