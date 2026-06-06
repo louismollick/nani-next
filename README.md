@@ -1,4 +1,4 @@
-# nani-next
+<img width="1354" height="869" alt="Screenshot 2026-06-06 at 12 16 25 AM" src="https://github.com/user-attachments/assets/b66b05a5-02a8-4bf6-8b05-c7648d6a5949" />
 
 Nani next? helps Japanese learners find their next anime to study japanese.
 
