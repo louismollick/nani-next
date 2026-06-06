@@ -25,9 +25,20 @@ export function useAnimeListLookup(lookup: AnimeListLookup) {
       setIsPending(true)
 
       try {
-        setLookupState(
-          await lookupFn({ data: { source, username: nextUsername } })
-        )
+        const response = await lookupFn({
+          data: { source, username: nextUsername },
+        })
+        setLookupState(response)
+      } catch (error) {
+        console.error("Anime list lookup failed", error)
+        setLookupState({
+          ok: false,
+          code: "UPSTREAM_ERROR",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Lookup failed. Try again.",
+        })
       } finally {
         setIsPending(false)
       }

@@ -34,6 +34,20 @@ function formatAbsoluteFetchedAt(value: string) {
     : `Fetched ${absoluteTimeFormatter.format(fetchedAt)}.`
 }
 
+function formatCacheTtl(ttlSeconds: number) {
+  if (ttlSeconds < 60) {
+    return `${ttlSeconds} second${ttlSeconds === 1 ? "" : "s"}`
+  }
+
+  if (ttlSeconds < 3600) {
+    const minutes = ttlSeconds / 60
+    return `${minutes} minute${minutes === 1 ? "" : "s"}`
+  }
+
+  const hours = ttlSeconds / 3600
+  return `${hours} hour${hours === 1 ? "" : "s"}`
+}
+
 export function LookupFreshness({ fetchedAt }: { fetchedAt: string }) {
   const now = useRelativeTime()
 
@@ -52,8 +66,8 @@ export function LookupFreshness({ fetchedAt }: { fetchedAt: string }) {
       <TooltipContent className="max-w-64 text-left leading-5">
         <p>{formatAbsoluteFetchedAt(fetchedAt)}</p>
         <p>
-          Lookups are cached per user for {successLookupTtlSeconds / 60 / 60}{" "}
-          hour.
+          Lookups are cached per user for{" "}
+          {formatCacheTtl(successLookupTtlSeconds)}.
         </p>
       </TooltipContent>
     </Tooltip>

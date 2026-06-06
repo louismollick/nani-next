@@ -74,7 +74,7 @@ export function ResultCard({ result }: { result: OverlapResult }) {
         ) : null}
         {links.overlay}
       </div>
-      <DrawerContent aria-describedby={undefined} className="lg:hidden">
+      <DrawerContent className="lg:hidden">
         <DrawerHeader>
           <DrawerTitle>{getResultTitle(result)}</DrawerTitle>
           <DrawerDescription className="sr-only">

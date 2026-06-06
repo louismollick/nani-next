@@ -21,6 +21,9 @@ export function isLearnNativelyJlptRangeValue(range: NumericRange | null) {
     Number.isInteger(range[0]) &&
     Number.isInteger(range[1]) &&
     range[0] >= 0 &&
+    range[0] < learnNativelyJlptEquivalents.length &&
+    range[1] >= 0 &&
+    range[0] <= range[1] &&
     range[1] < learnNativelyJlptEquivalents.length
   )
 }

@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useCallback, useEffect, useMemo } from "react"
 import type { LookupResponse } from "@/features/anime-list/domain/lookup-response"
 import { useAnimeListLookup } from "@/features/anime-list/hooks/use-anime-list-lookup"
 import { useAnimeListSearchState } from "@/features/anime-list/hooks/use-anime-list-search-state"
@@ -38,7 +38,10 @@ export function useAnimeListController({
     searchState,
   })
   const { isPending, lookupState, runLookup } = useAnimeListLookup(lookup)
-  const facets = deriveAnimeListFacets(lookupState)
+  const facets = useMemo(
+    () => deriveAnimeListFacets(lookupState),
+    [lookupState]
+  )
   const activeLookupIdentity = getLookupIdentity(activeSearchState)
 
   useEffect(() => {
@@ -55,13 +58,29 @@ export function useAnimeListController({
     username: activeSearchState.username,
   })
 
-  const visibleResults = lookupState?.ok
-    ? sortAnimeListResults(
-        filterAnimeListResults(lookupState.results, activeSearchState, facets),
-        activeSearchState.sortBy,
-        activeSearchState.sortDirection
-      )
-    : []
+  const visibleResults = useMemo(
+    () =>
+      lookupState?.ok
+        ? sortAnimeListResults(
+            filterAnimeListResults(
+              lookupState.results,
+              activeSearchState,
+              facets
+            ),
+            activeSearchState.sortBy,
+            activeSearchState.sortDirection
+          )
+        : [],
+    [activeSearchState, facets, lookupState]
+  )
+
+  const handleSubmit = useCallback(
+    async (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault()
+      await runLookup(activeSearchState.source, activeSearchState.username)
+    },
+    [activeSearchState.source, activeSearchState.username, runLookup]
+  )
 
   return {
     activeDifficultyBounds: getActiveDifficultyBounds(
@@ -70,10 +89,7 @@ export function useAnimeListController({
     ),
     activeDifficultyRange: getActiveDifficultyRange(activeSearchState, facets),
     facets,
-    handleSubmit: async (event: React.FormEvent<HTMLFormElement>) => {
-      event.preventDefault()
-      await runLookup(activeSearchState.source, activeSearchState.username)
-    },
+    handleSubmit,
     hasResultsState: lookupState?.ok === true,
     isPending,
     lookupState,

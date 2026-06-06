@@ -23,18 +23,20 @@ function OverlayHarness() {
 
 describe("use-result-card-overlay", () => {
   it("opens tooltip on pointer move in desktop viewport", () => {
-    vi.spyOn(window, "matchMedia").mockImplementation((query) => ({
-      matches: false,
-      media: query,
-      onchange: null,
-      addEventListener() {},
-      removeEventListener() {},
-      addListener() {},
-      removeListener() {},
-      dispatchEvent() {
-        return false
-      },
-    }))
+    const matchMediaSpy = vi
+      .spyOn(window, "matchMedia")
+      .mockImplementation((query) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addEventListener() {},
+        removeEventListener() {},
+        addListener() {},
+        removeListener() {},
+        dispatchEvent() {
+          return false
+        },
+      }))
     render(<OverlayHarness />)
 
     fireEvent.pointerMove(screen.getByRole("button", { name: "trigger" }), {
@@ -42,5 +44,6 @@ describe("use-result-card-overlay", () => {
     })
 
     expect(screen.getByText("open")).toBeInTheDocument()
+    matchMediaSpy.mockRestore()
   })
 })

@@ -13,7 +13,10 @@ import {
   animeSources,
 } from "@/features/anime-list/domain/anime-list-enums"
 import type { LookupSearchState } from "@/features/anime-list/lib/anime-list-search-state"
-import { getSourceLabel } from "@/features/anime-list/lib/labels"
+import {
+  getSourceLabel,
+  sourceFavicons,
+} from "@/features/anime-list/lib/labels"
 
 export function AnimeListSearchForm({
   handleSubmit,
@@ -76,7 +79,7 @@ export function AnimeListSearchForm({
           />
         </div>
         <Button
-          aria-label={isPending ? "Searching" : "Find overlap"}
+          aria-label={isPending ? undefined : "Find overlap"}
           className="h-12 shrink-0 px-6 text-sm font-semibold"
           disabled={isPending}
           type="submit"
@@ -102,11 +105,7 @@ function SourceOptionLabel({ source }: { source: AnimeSource }) {
         alt=""
         aria-hidden="true"
         className="size-4 shrink-0 rounded-sm"
-        src={
-          source === "myanimelist"
-            ? "/myanimelist-favicon.svg"
-            : "/anilist-favicon-32x32.png"
-        }
+        src={sourceFavicons[source] ?? sourceFavicons.anilist}
       />
       <span>{getSourceLabel(source)}</span>
     </span>

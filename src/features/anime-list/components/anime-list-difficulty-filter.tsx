@@ -47,7 +47,7 @@ export function AnimeListDifficultyFilter({
             <SelectValue />
           </SelectTrigger>
           <SelectContent
-            className="w-[var(--radix-select-trigger-width)]"
+            className="w-(var(--radix-select-trigger-width))"
             position="popper"
           >
             {difficultyFilterModes.map((mode) => (

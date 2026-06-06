@@ -63,7 +63,12 @@ function toNumberRange(value: unknown): NumericRange | null {
 
   const [left, right] = value
 
-  if (typeof left !== "number" || typeof right !== "number") {
+  if (
+    typeof left !== "number" ||
+    typeof right !== "number" ||
+    !Number.isFinite(left) ||
+    !Number.isFinite(right)
+  ) {
     return null
   }
 

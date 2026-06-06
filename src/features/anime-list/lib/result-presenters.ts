@@ -13,7 +13,11 @@ export function getEntryTitle(entry: AnimeEntry) {
 }
 
 export function getResultTitle(result: OverlapResult) {
-  return getEntryTitle(result.entry) ?? result.matchedJimaku?.name ?? "Unknown"
+  const entryTitle = getEntryTitle(result.entry)
+
+  return entryTitle !== "Unknown"
+    ? entryTitle
+    : (result.matchedJimaku?.name ?? "Unknown")
 }
 
 export function getSubtitleAvailability(

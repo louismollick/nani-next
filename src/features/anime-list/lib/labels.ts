@@ -39,6 +39,11 @@ export const sortDirectionLabels: Record<SortDirection, string> = {
   asc: "Asc",
 }
 
+export const sourceFavicons: Record<AnimeSource, string> = {
+  anilist: "/anilist-favicon-32x32.png",
+  myanimelist: "/myanimelist-favicon.svg",
+}
+
 export function getSourceLabel(source: AnimeSource) {
   return source === "myanimelist" ? "MyAnimeList" : "AniList"
 }

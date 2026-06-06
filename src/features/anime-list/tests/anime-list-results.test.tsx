@@ -1,6 +1,9 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
-import { renderAnimeList } from "@/features/anime-list/tests/render-anime-list"
+import {
+  mockViewport,
+  renderAnimeList,
+} from "@/features/anime-list/tests/render-anime-list"
 import { successResponse } from "@/features/anime-list/tests/test-data"
 
 describe("AnimeListResults", () => {
@@ -39,19 +42,7 @@ describe("AnimeListResults", () => {
   })
 
   it("opens mobile drawer with metadata on card tap", async () => {
-    const viewportSpy = vi.spyOn(window, "matchMedia")
-    viewportSpy.mockImplementation((query) => ({
-      matches: query === "(max-width: 1023px)",
-      media: query,
-      onchange: null,
-      addEventListener() {},
-      removeEventListener() {},
-      addListener() {},
-      removeListener() {},
-      dispatchEvent() {
-        return false
-      },
-    }))
+    const viewportSpy = mockViewport({ isMobile: true })
     renderAnimeList({
       lookup: vi.fn().mockResolvedValue(successResponse()),
       searchState: {
