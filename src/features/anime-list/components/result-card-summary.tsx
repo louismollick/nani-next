@@ -19,14 +19,20 @@ export function ResultCardSummary({ result }: { result: OverlapResult }) {
         />
         <DifficultyBadge result={result} />
       </div>
-      <div className="flex items-start gap-2.5 px-0.5">
-        <StatusDot status={result.entry.status} />
-        <h3 className="line-clamp-2 min-w-0 flex-1 text-sm font-medium leading-5 text-muted-foreground">
-          {getResultTitle(result)}
-        </h3>
-        {result.matchedJimaku && result.completeness === "incomplete" ? (
-          <WarningDot />
-        ) : null}
+      <div className="space-y-3 px-0.5">
+        <div className="flex items-start gap-2.5">
+          <StatusDot status={result.entry.status} />
+          <div className="min-w-0 flex-1 space-y-1">
+            <h3 className="line-clamp-2 h-10 text-sm font-medium leading-5 text-muted-foreground">
+              {getResultTitle(result)}
+            </h3>
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5">
+            {result.matchedJimaku && result.completeness === "incomplete" ? (
+              <WarningDot />
+            ) : null}
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -74,13 +80,32 @@ function DifficultyBadge({ result }: { result: OverlapResult }) {
 
   return (
     <div className="absolute bottom-2 left-0">
-      <div className="h-auto min-w-[90px] rounded-r-md border border-border bg-background/90 px-2.5 py-2 text-xs font-semibold text-foreground shadow-[0_12px_24px_-16px_rgba(0,0,0,0.9)] backdrop-blur-sm">
-        {result.matchedJpdb ? (
-          <div>{result.matchedJpdb.entry.averageDifficulty}/100</div>
-        ) : null}
-        {result.matchedLearnNatively ? (
-          <div>{result.matchedLearnNatively.jlptEquivalent}</div>
-        ) : null}
+      <div className="h-auto min-w-[90px] rounded-r-md rounded-l-none border border-border bg-background/90 px-2.5 py-2 text-xs font-semibold text-foreground shadow-[0_12px_24px_-16px_rgba(0,0,0,0.9)] backdrop-blur-sm">
+        <div className="flex flex-col items-start gap-1">
+          <span className="text-xs font-bold text-foreground">Difficulty</span>
+          {result.matchedJpdb ? (
+            <div className="flex items-center gap-1.5">
+              <img
+                alt=""
+                aria-hidden="true"
+                className="size-3.5 rounded-sm"
+                src="/jpdb-favicon-32x32.png"
+              />
+              <span>{result.matchedJpdb.entry.averageDifficulty}/100</span>
+            </div>
+          ) : null}
+          {result.matchedLearnNatively ? (
+            <div className="flex items-center gap-1.5">
+              <img
+                alt=""
+                aria-hidden="true"
+                className="size-3.5 rounded-sm"
+                src="/learnnatively-favicon-32x32.png"
+              />
+              <span>{result.matchedLearnNatively.jlptEquivalent}</span>
+            </div>
+          ) : null}
+        </div>
       </div>
     </div>
   )

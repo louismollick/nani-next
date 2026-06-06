@@ -59,4 +59,39 @@ describe("AnimeListResults", () => {
     expect(await screen.findByRole("dialog")).toBeInTheDocument()
     viewportSpy.mockRestore()
   })
+
+  it("keeps desktop platform links interactive and restores full metadata", async () => {
+    renderAnimeList({
+      lookup: vi.fn().mockResolvedValue(successResponse()),
+      searchState: {
+        username: "mollicl",
+        selectedStatuses: ["CURRENT"],
+      },
+    })
+
+    const title = await screen.findByText("Blue Box")
+    const card = title.closest("[data-result-card]")
+
+    if (!card) throw new Error("expected result card")
+
+    fireEvent.pointerEnter(card)
+
+    expect(await screen.findByRole("link", { name: /jpdb/i })).toHaveAttribute(
+      "href",
+      "https://jpdb.io/anime/11/blue-box"
+    )
+    expect(
+      document.querySelector('img[src="/jpdb-favicon-32x32.png"]')
+    ).toBeTruthy()
+    expect(
+      document.querySelector('img[src="/learnnatively-favicon-32x32.png"]')
+    ).toBeTruthy()
+
+    fireEvent.focus(card.querySelector("button") ?? card)
+
+    const tooltip = await screen.findByRole("tooltip")
+    expect(tooltip).toHaveTextContent("Unique kanji")
+    expect(tooltip).toHaveTextContent("Unique readings")
+    expect(tooltip).toHaveTextContent("Words used once")
+  })
 })

@@ -10,7 +10,7 @@ const resultCardTooltipWidth = 320
 const viewportTooltipPadding = 16
 
 export function useResultCardOverlay(
-  hoverTargetRef: RefObject<HTMLButtonElement | null>
+  hoverTargetRef: RefObject<HTMLElement | null>
 ) {
   const [isTooltipOpen, setIsTooltipOpen] = useState(false)
   const [tooltipSide, setTooltipSide] = useState<"left" | "right">("right")
@@ -101,6 +101,21 @@ export function useResultCardOverlay(
     setIsTooltipOpen(true)
   }
 
+  const handlePointerLeave = (event: ReactPointerEvent<HTMLElement>) => {
+    if (event.pointerType === "touch" || isMobileViewport) {
+      return
+    }
+
+    if (
+      event.relatedTarget instanceof Node &&
+      event.currentTarget.contains(event.relatedTarget)
+    ) {
+      return
+    }
+
+    setIsTooltipOpen(false)
+  }
+
   const handleLinkBlur = (event: FocusEvent<HTMLAnchorElement>) => {
     if (event.currentTarget.parentElement?.contains(event.relatedTarget)) {
       return
@@ -111,6 +126,7 @@ export function useResultCardOverlay(
 
   return {
     handleLinkBlur,
+    handlePointerLeave,
     handlePointerUpdate,
     isDrawerOpen,
     isMobileViewport,

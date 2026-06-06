@@ -104,7 +104,7 @@ export function ResultCardLinks({
     ),
     overlay: (
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 hidden p-2.5 lg:block">
-        <div className="flex origin-top transform-gpu flex-col gap-1.5 opacity-0 scale-[0.95] transition-[opacity,transform] duration-200 ease-out group-hover:opacity-100 group-hover:scale-100 group-focus-within:opacity-100 group-focus-within:scale-100">
+        <div className="pointer-events-auto flex origin-top transform-gpu flex-col gap-1.5 opacity-0 scale-[0.95] transition-[opacity,transform] duration-200 ease-out group-hover:opacity-100 group-hover:scale-100 group-focus-within:opacity-100 group-focus-within:scale-100">
           <ResultCardActions
             links={links}
             onBlur={onBlur}

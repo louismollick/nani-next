@@ -16,13 +16,12 @@ import type { OverlapResult } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
 export function ResultCard({ result }: { result: OverlapResult }) {
-  const hoverTargetRef = useRef<HTMLButtonElement | null>(null)
+  const hoverTargetRef = useRef<HTMLDivElement | null>(null)
   const overlay = useResultCardOverlay(hoverTargetRef)
   const links = ResultCardLinks({
     onBlur: overlay.handleLinkBlur,
     onFocus: () => overlay.setIsTooltipOpen(true),
     onPointerEnter: () => overlay.setIsTooltipOpen(true),
-    onPointerLeave: () => overlay.setIsTooltipOpen(false),
     result,
   })
 
@@ -34,6 +33,8 @@ export function ResultCard({ result }: { result: OverlapResult }) {
           overlay.isTooltipOpen ? "z-30" : "z-0"
         )}
         data-result-card
+        onPointerLeave={overlay.handlePointerLeave}
+        ref={hoverTargetRef}
       >
         <button
           aria-describedby={
@@ -52,14 +53,11 @@ export function ResultCard({ result }: { result: OverlapResult }) {
               overlay.setIsTooltipOpen(true)
             }
           }}
-          onPointerLeave={() => overlay.setIsTooltipOpen(false)}
-          ref={hoverTargetRef}
           type="button"
         >
           <div
             className="space-y-3"
             onPointerEnter={overlay.handlePointerUpdate}
-            onPointerLeave={() => overlay.setIsTooltipOpen(false)}
             onPointerMove={overlay.handlePointerUpdate}
           >
             <ResultCardSummary result={result} />

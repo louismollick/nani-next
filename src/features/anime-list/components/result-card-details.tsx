@@ -33,6 +33,18 @@ export function ResultCardDetails({ result }: { result: OverlapResult }) {
               label="Unique words"
               value={result.matchedJpdb.entry.uniqueWords.toLocaleString()}
             />
+            <InfoItem
+              label="Unique kanji"
+              value={result.matchedJpdb.entry.uniqueKanji.toLocaleString()}
+            />
+            <InfoItem
+              label="Words used once"
+              value={`${result.matchedJpdb.entry.uniqueWordsUsedOnce.toLocaleString()} (${result.matchedJpdb.entry.uniqueWordsUsedOncePercent}%)`}
+            />
+            <InfoItem
+              label="Unique readings"
+              value={result.matchedJpdb.entry.uniqueKanjiReadings.toLocaleString()}
+            />
           </>
         ) : null}
         {result.matchedLearnNatively ? (
