@@ -1245,10 +1245,10 @@ export function AnimeOverlapPage({
             </div>
             <h1
               className={cn(
-                "inline-flex justify-center font-semibold tracking-tight text-foreground transition-all duration-700 ease-out",
+                "inline-flex justify-center font-semibold tracking-tight text-foreground text-5xl sm:text-6xl",
                 hasResultsState
-                  ? "items-center gap-4 text-5xl sm:text-6xl"
-                  : "mb-6 items-center gap-0 text-4xl sm:text-5xl"
+                  ? "items-center gap-4"
+                  : "mb-6 items-center gap-0"
               )}
             >
               <img
