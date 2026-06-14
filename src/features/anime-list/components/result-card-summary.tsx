@@ -3,7 +3,11 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { getResultTitle } from "@/features/anime-list/lib/result-presenters"
+import { AverageScoreIndicator } from "@/features/anime-list/components/average-score-indicator"
+import {
+  getAverageScorePresentation,
+  getResultTitle,
+} from "@/features/anime-list/lib/result-presenters"
 import { statusDotClassName, statusLabel } from "@/lib/status"
 import type { OverlapResult } from "@/lib/types"
 import { cn } from "@/lib/utils"
@@ -17,7 +21,7 @@ export function ResultCardSummary({ result }: { result: OverlapResult }) {
           className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
           src={result.entry.media.coverImage.large}
         />
-        <DifficultyBadge result={result} />
+        <MetadataBadge result={result} />
       </div>
       <div className="space-y-3 px-0.5">
         <div className="flex items-start gap-2.5">
@@ -81,16 +85,33 @@ function WarningDot() {
   )
 }
 
-function DifficultyBadge({ result }: { result: OverlapResult }) {
-  if (!result.matchedJpdb && !result.matchedLearnNatively) {
+function MetadataBadge({ result }: { result: OverlapResult }) {
+  const averageScore = getAverageScorePresentation(
+    result.entry.media.averageScore
+  )
+  const hasDifficultySources = Boolean(
+    result.matchedJpdb || result.matchedLearnNatively
+  )
+  const hasMultipleRows = Boolean(averageScore && hasDifficultySources)
+
+  if (!averageScore && !hasDifficultySources) {
     return null
   }
 
   return (
     <div className="absolute bottom-2 left-0">
-      <div className="h-auto min-w-[90px] rounded-r-md rounded-l-none border border-border bg-background/90 px-2.5 py-2 text-xs font-semibold text-foreground shadow-[0_12px_24px_-16px_rgba(0,0,0,0.9)] backdrop-blur-sm">
-        <div className="flex flex-col items-start gap-1">
-          <span className="text-xs font-bold text-foreground">Difficulty</span>
+      <div className="flex h-auto rounded-r-md rounded-l-none border border-border bg-background/90 py-2 pl-2.5 pr-2.5 text-xs font-semibold text-foreground shadow-[0_12px_24px_-16px_rgba(0,0,0,0.9)] backdrop-blur-sm">
+        <div
+          className={cn(
+            "flex",
+            hasMultipleRows
+              ? "flex-col items-start gap-y-1.5"
+              : "items-center gap-x-2.5"
+          )}
+        >
+          {averageScore ? (
+            <AverageScoreIndicator presentation={averageScore} />
+          ) : null}
           {result.matchedJpdb ? (
             <div className="flex items-center gap-1.5">
               <img
@@ -99,7 +120,9 @@ function DifficultyBadge({ result }: { result: OverlapResult }) {
                 className="size-3.5 rounded-sm"
                 src="/jpdb-favicon-32x32.png"
               />
-              <span>{result.matchedJpdb.entry.averageDifficulty}/100</span>
+              <span>
+                Difficulty {result.matchedJpdb.entry.averageDifficulty}/100
+              </span>
             </div>
           ) : null}
           {result.matchedLearnNatively ? (

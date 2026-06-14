@@ -14,6 +14,13 @@ import {
 } from "@/features/anime-list/lib/anime-metadata-filters"
 import { getEntryTitles } from "@/lib/matching"
 
+export type AverageScorePresentation = {
+  face: ":)" | ":|" | ":("
+  label: "Great" | "Mixed" | "Poor"
+  percentage: string
+  toneClassName: string
+}
+
 export function getEntryTitle(entry: AnimeEntry) {
   return entry.media.title.primary ?? entry.media.title.english ?? "Unknown"
 }
@@ -24,6 +31,39 @@ export function getResultTitle(result: OverlapResult) {
   return entryTitle !== "Unknown"
     ? entryTitle
     : (result.matchedJimaku?.name ?? "Unknown")
+}
+
+export function getAverageScorePresentation(
+  score: number | null
+): AverageScorePresentation | null {
+  if (score === null) {
+    return null
+  }
+
+  if (score >= 75) {
+    return {
+      face: ":)",
+      label: "Great",
+      percentage: `${score}%`,
+      toneClassName: "text-emerald-400",
+    }
+  }
+
+  if (score >= 60) {
+    return {
+      face: ":|",
+      label: "Mixed",
+      percentage: `${score}%`,
+      toneClassName: "text-amber-400",
+    }
+  }
+
+  return {
+    face: ":(",
+    label: "Poor",
+    percentage: `${score}%`,
+    toneClassName: "text-rose-400",
+  }
 }
 
 export function getSubtitleAvailability(

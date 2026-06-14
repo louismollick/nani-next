@@ -6,6 +6,11 @@ import {
 } from "@/features/anime-list/tests/render-anime-list"
 import { successResponse } from "@/features/anime-list/tests/test-data"
 
+function expectAverageScoreMetadata(container: Element) {
+  expect(container).toHaveTextContent("Average Score")
+  expect(container).toHaveTextContent("88%")
+}
+
 describe("AnimeListResults", () => {
   it("filters visible cards by title and preserves sort direction changes", async () => {
     renderAnimeList({
@@ -68,7 +73,9 @@ describe("AnimeListResults", () => {
 
     if (!card) throw new Error("expected result card")
     fireEvent.click(card)
-    expect(await screen.findByRole("dialog")).toBeInTheDocument()
+    const dialog = await screen.findByRole("dialog")
+    expect(dialog).toBeInTheDocument()
+    expectAverageScoreMetadata(dialog)
     viewportSpy.mockRestore()
   })
 
@@ -86,7 +93,7 @@ describe("AnimeListResults", () => {
 
     if (!card) throw new Error("expected result card")
 
-    fireEvent.pointerEnter(card)
+    fireEvent.pointerEnter(card.querySelector("button > div") ?? card)
 
     expect(await screen.findByRole("link", { name: /jpdb/i })).toHaveAttribute(
       "href",
@@ -99,11 +106,17 @@ describe("AnimeListResults", () => {
       document.querySelector('img[src="/learnnatively-favicon-32x32.png"]')
     ).toBeTruthy()
 
-    fireEvent.focus(card.querySelector("button") ?? card)
+    const tooltip = await screen.findByText("Unique kanji")
+    const tooltipPanel =
+      tooltip.closest('[role="tooltip"]') ?? tooltip.parentElement
 
-    const tooltip = await screen.findByRole("tooltip")
-    expect(tooltip).toHaveTextContent("Unique kanji")
-    expect(tooltip).toHaveTextContent("Unique readings")
-    expect(tooltip).toHaveTextContent("Words used once")
+    expect(
+      screen.getAllByLabelText("Average Score 88% Great").length
+    ).toBeGreaterThanOrEqual(1)
+    if (!tooltipPanel) throw new Error("expected tooltip panel")
+    expectAverageScoreMetadata(tooltipPanel)
+    expect(tooltipPanel).toHaveTextContent("Unique kanji")
+    expect(tooltipPanel).toHaveTextContent("Unique readings")
+    expect(tooltipPanel).toHaveTextContent("Words used once")
   })
 })

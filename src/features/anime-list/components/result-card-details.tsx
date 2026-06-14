@@ -1,16 +1,33 @@
+import type { ReactNode } from "react"
 import { Badge } from "@/components/ui/badge"
 import { FieldLabel } from "@/components/ui/field-label"
+import { AverageScoreIndicator } from "@/features/anime-list/components/average-score-indicator"
 import type { OverlapResult } from "@/features/anime-list/domain/lookup-response"
 import { getMediaStatusLabel } from "@/features/anime-list/lib/labels"
+import { getAverageScorePresentation } from "@/features/anime-list/lib/result-presenters"
 import { statusLabel } from "@/lib/status"
 
 export function ResultCardDetails({ result }: { result: OverlapResult }) {
+  const averageScore = getAverageScorePresentation(
+    result.entry.media.averageScore
+  )
+
   return (
     <div className="space-y-3.5">
       <div className="grid grid-cols-2 gap-x-4 gap-y-3">
         <InfoItem
           label="Episodes"
           value={result.entry.media.episodes ?? "Unknown"}
+        />
+        <InfoItem
+          label="Average Score"
+          value={
+            averageScore ? (
+              <AverageScoreIndicator presentation={averageScore} />
+            ) : (
+              "Unknown"
+            )
+          }
         />
         <InfoItem
           label="Jimaku Files"
@@ -85,7 +102,7 @@ export function ResultCardDetails({ result }: { result: OverlapResult }) {
   )
 }
 
-function InfoItem({ label, value }: { label: string; value: string | number }) {
+function InfoItem({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div>
       <FieldLabel>{label}</FieldLabel>
