@@ -31,6 +31,12 @@ export function AnimeListResults({
   const autoLoadLockedRef = useRef(false)
 
   useEffect(() => {
+    if (!isPending && !isRetrying) {
+      autoLoadLockedRef.current = false
+    }
+  }, [isPending, isRetrying])
+
+  useEffect(() => {
     if (!isGlobalAniListBrowse || !hasNextPage || !sentinelRef.current) {
       autoLoadLockedRef.current = false
       return

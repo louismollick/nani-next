@@ -3,6 +3,10 @@ import { describe, expect, it, vi } from "vitest"
 import { AnimeListResults } from "@/features/anime-list/components/anime-list-results"
 
 type ObserverCallback = ConstructorParameters<typeof IntersectionObserver>[0]
+type RenderState = {
+  isPending: boolean
+  isRetrying: boolean
+}
 
 class MockIntersectionObserver {
   static instances: MockIntersectionObserver[] = []
@@ -21,16 +25,98 @@ class MockIntersectionObserver {
   unobserve() {}
 }
 
+function renderResults(
+  loadNextPage: () => void,
+  state: RenderState = { isPending: false, isRetrying: false }
+) {
+  return render(
+    <AnimeListResults
+      hasNextPage
+      isGlobalAniListBrowse
+      isPending={state.isPending}
+      isRetrying={state.isRetrying}
+      loadNextPage={loadNextPage}
+      lookupStateOk
+      results={[]}
+    />
+  )
+}
+
+function getLatestObserver() {
+  const observer = MockIntersectionObserver.instances.at(-1)
+
+  if (!observer) {
+    throw new Error("expected observer instance")
+  }
+
+  return observer
+}
+
+function triggerIntersection(
+  observer: MockIntersectionObserver,
+  value: boolean
+) {
+  observer.callback(
+    [{ isIntersecting: value } as IntersectionObserverEntry],
+    observer as unknown as IntersectionObserver
+  )
+}
+
+function withMockedObserver(run: () => void) {
+  const originalIntersectionObserver = globalThis.IntersectionObserver
+
+  globalThis.IntersectionObserver =
+    MockIntersectionObserver as unknown as typeof IntersectionObserver
+
+  try {
+    run()
+  } finally {
+    MockIntersectionObserver.instances = []
+    globalThis.IntersectionObserver = originalIntersectionObserver
+  }
+}
+
 describe("AnimeListResults infinite scroll", () => {
   it("auto-loads only once per continuous sentinel intersection", () => {
     const loadNextPage = vi.fn()
-    const originalIntersectionObserver = globalThis.IntersectionObserver
+    withMockedObserver(() => {
+      renderResults(loadNextPage)
+      const observer = getLatestObserver()
 
-    globalThis.IntersectionObserver =
-      MockIntersectionObserver as unknown as typeof IntersectionObserver
+      triggerIntersection(observer, true)
+      triggerIntersection(observer, true)
 
-    try {
-      render(
+      expect(loadNextPage).toHaveBeenCalledTimes(1)
+
+      triggerIntersection(observer, false)
+      triggerIntersection(observer, true)
+
+      expect(loadNextPage).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  it("re-arms auto-load after loading completes while sentinel stays in view", () => {
+    const loadNextPage = vi.fn()
+    withMockedObserver(() => {
+      const { rerender } = renderResults(loadNextPage)
+      const initialObserver = getLatestObserver()
+
+      triggerIntersection(initialObserver, true)
+
+      expect(loadNextPage).toHaveBeenCalledTimes(1)
+
+      rerender(
+        <AnimeListResults
+          hasNextPage
+          isGlobalAniListBrowse
+          isPending
+          isRetrying={false}
+          loadNextPage={loadNextPage}
+          lookupStateOk
+          results={[]}
+        />
+      )
+      rerender(
         <AnimeListResults
           hasNextPage
           isGlobalAniListBrowse
@@ -42,36 +128,9 @@ describe("AnimeListResults infinite scroll", () => {
         />
       )
 
-      const observer = MockIntersectionObserver.instances.at(-1)
-
-      if (!observer) {
-        throw new Error("expected observer instance")
-      }
-
-      observer.callback(
-        [{ isIntersecting: true } as IntersectionObserverEntry],
-        observer as unknown as IntersectionObserver
-      )
-      observer.callback(
-        [{ isIntersecting: true } as IntersectionObserverEntry],
-        observer as unknown as IntersectionObserver
-      )
-
-      expect(loadNextPage).toHaveBeenCalledTimes(1)
-
-      observer.callback(
-        [{ isIntersecting: false } as IntersectionObserverEntry],
-        observer as unknown as IntersectionObserver
-      )
-      observer.callback(
-        [{ isIntersecting: true } as IntersectionObserverEntry],
-        observer as unknown as IntersectionObserver
-      )
+      triggerIntersection(getLatestObserver(), true)
 
       expect(loadNextPage).toHaveBeenCalledTimes(2)
-    } finally {
-      MockIntersectionObserver.instances = []
-      globalThis.IntersectionObserver = originalIntersectionObserver
-    }
+    })
   })
 })
