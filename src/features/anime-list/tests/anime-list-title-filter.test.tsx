@@ -24,8 +24,8 @@ describe("AnimeListTitleFilter", () => {
 
     const updater = updateSearchState.mock.calls[0]?.[0]
     expect(updater).toBeTypeOf("function")
-    expect(
-      updater(defaultLookupSearchState).titleQuery
-    ).toBe("Fullmetal Alchemist")
+    expect(updater(defaultLookupSearchState).titleQuery).toBe(
+      "Fullmetal Alchemist"
+    )
   })
 })
