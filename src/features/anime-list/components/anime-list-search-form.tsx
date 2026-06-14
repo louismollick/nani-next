@@ -68,12 +68,14 @@ export function AnimeListSearchForm({
           <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             className="h-12 pl-11 text-base"
-            onChange={(event) =>
+            onChange={(event) => {
+              const username = event.target.value
+
               updateSearchState((previousState) => ({
                 ...previousState,
-                username: event.target.value,
+                username,
               }))
-            }
+            }}
             placeholder="Enter username"
             value={searchState.username}
           />

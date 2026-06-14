@@ -25,12 +25,14 @@ export function AnimeListTitleFilter({
         <Input
           className="pl-11"
           id="title-filter"
-          onChange={(event) =>
+          onChange={(event) => {
+            const titleQuery = event.target.value
+
             updateSearchState((previousState) => ({
               ...previousState,
-              titleQuery: event.target.value,
+              titleQuery,
             }))
-          }
+          }}
           placeholder="Search titles..."
           value={searchState.titleQuery}
         />

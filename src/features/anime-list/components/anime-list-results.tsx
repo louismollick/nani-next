@@ -28,19 +28,25 @@ export function AnimeListResults({
   results: OverlapResult[]
 }) {
   const sentinelRef = useRef<HTMLDivElement | null>(null)
+  const autoLoadLockedRef = useRef(false)
 
   useEffect(() => {
     if (!isGlobalAniListBrowse || !hasNextPage || !sentinelRef.current) {
+      autoLoadLockedRef.current = false
       return
     }
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (
-          entries.some((entry) => entry.isIntersecting) &&
-          !isPending &&
-          !isRetrying
-        ) {
+        const isIntersecting = entries.some((entry) => entry.isIntersecting)
+
+        if (!isIntersecting) {
+          autoLoadLockedRef.current = false
+          return
+        }
+
+        if (!autoLoadLockedRef.current && !isPending && !isRetrying) {
+          autoLoadLockedRef.current = true
           loadNextPage()
         }
       },
