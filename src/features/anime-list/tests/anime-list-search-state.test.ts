@@ -18,8 +18,10 @@ describe("anime-list-search-state", () => {
     expect(
       canonicalizeLookupSearch({
         ...defaultLookupSearchState,
+        mode: "animeSearch",
         source: "myanimelist",
         username: "  Mollicl  ",
+        animeSearchQuery: "  Frieren  ",
         titleQuery: "  apothecary!! ",
         selectedStatuses: ["CURRENT", "PLANNING"],
         selectedMediaStatuses: ["RELEASING"],
@@ -28,8 +30,10 @@ describe("anime-list-search-state", () => {
         yearRange: [1980, 2024],
       })
     ).toEqual({
+      mode: "animeSearch",
       source: "myanimelist",
       username: "Mollicl",
+      animeSearchQuery: "Frieren",
       titleQuery: "apothecary!!",
       selectedStatuses: ["CURRENT", "PLANNING"],
       selectedMediaStatuses: ["RELEASING"],
@@ -54,16 +58,27 @@ describe("anime-list-search-state", () => {
   it("accepts case-insensitive enum values", () => {
     expect(
       validateLookupSearch({
+        mode: "ANIMESEARCH",
         source: "MYANIMELIST",
         sortDirection: "ASC",
         myAnimeFilterMode: "SHOWALL",
       })
     ).toEqual({
       ...defaultLookupSearchState,
+      mode: "animeSearch",
       source: "myanimelist",
       myAnimeFilterMode: "showAll",
       sortDirection: "asc",
     })
+  })
+
+  it("omits anime-search query from canonical output while user-list mode is active", () => {
+    expect(
+      canonicalizeLookupSearch({
+        ...defaultLookupSearchState,
+        animeSearchQuery: "Frieren",
+      })
+    ).toEqual({})
   })
 
   it("accepts new metadata filters", () => {

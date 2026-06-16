@@ -1,4 +1,5 @@
 export const animeSources = ["anilist", "myanimelist"] as const
+export const searchModes = ["userList", "animeSearch"] as const
 
 export const watchStatuses = [
   "CURRENT",
@@ -53,6 +54,7 @@ export const learnNativelyJlptEquivalents = [
 ] as const
 
 export type AnimeSource = (typeof animeSources)[number]
+export type SearchMode = (typeof searchModes)[number]
 export type WatchStatus = (typeof watchStatuses)[number]
 export type SortOption = (typeof sortOptions)[number]
 export type SortDirection = (typeof sortDirections)[number]
@@ -181,6 +183,17 @@ export type OverlapResult = {
   completeness: Completeness
   matchedJpdb?: DatasetMatch<JpdbAnimeDifficultyEntry>
   matchedLearnNatively?: LearnNativelyMatch
+}
+
+export type AnimeSearchSuggestion = {
+  id: number
+  coverImage: {
+    large: string
+    color: string | null
+  }
+  format: AnimeFormat | null
+  title: AnimeTitle
+  year: number | null
 }
 
 export type LookupResponse =

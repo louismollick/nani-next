@@ -38,9 +38,15 @@ export function canonicalizeLookupSearch(search: LookupSearchState) {
   )
   const canonicalSearch: Partial<LookupSearchState> = {}
 
+  if (search.mode !== defaultLookupSearchState.mode) {
+    canonicalSearch.mode = search.mode
+  }
   if (search.source !== defaultLookupSearchState.source)
     canonicalSearch.source = search.source
   if (search.username.trim()) canonicalSearch.username = search.username.trim()
+  if (search.mode === "animeSearch" && search.animeSearchQuery.trim()) {
+    canonicalSearch.animeSearchQuery = search.animeSearchQuery.trim()
+  }
   if (
     search.myAnimeFilterMode !== defaultLookupSearchState.myAnimeFilterMode &&
     search.source === "anilist"

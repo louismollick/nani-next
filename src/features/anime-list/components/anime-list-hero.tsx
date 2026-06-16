@@ -1,17 +1,20 @@
 import { AnimeListLookupStatus } from "@/features/anime-list/components/anime-list-lookup-status"
 import { AnimeListSearchForm } from "@/features/anime-list/components/anime-list-search-form"
+import type { AnimeListController } from "@/features/anime-list/hooks/use-anime-list-controller"
+import type { AnimeSearchController } from "@/features/anime-list/hooks/use-anime-search-controller"
 import type { LookupSearchState } from "@/features/anime-list/lib/anime-list-search-state"
 import { cn } from "@/lib/utils"
 
 export function AnimeListHero({
-  handleSubmit,
+  animeSearchController,
   hasResultsState,
   isPending,
   lookupState,
   searchState,
   updateSearchState,
+  userListController,
 }: {
-  handleSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>
+  animeSearchController: AnimeSearchController
   hasResultsState: boolean
   isPending: boolean
   lookupState: {
@@ -29,7 +32,10 @@ export function AnimeListHero({
   updateSearchState: (
     updater: (previousState: LookupSearchState) => LookupSearchState
   ) => void
+  userListController: AnimeListController
 }) {
+  const isAnimeSearchMode = searchState.mode === "animeSearch"
+
   return (
     <div
       className={cn(
@@ -77,13 +83,16 @@ export function AnimeListHero({
           hasResultsState ? "" : "mb-6"
         )}
       >
-        Find your next anime to study Japanese
+        {isAnimeSearchMode
+          ? "Search anime by title"
+          : "Find your next anime to study Japanese"}
       </p>
       <AnimeListSearchForm
-        handleSubmit={handleSubmit}
+        animeSearchController={animeSearchController}
         isPending={isPending}
         searchState={searchState}
         updateSearchState={updateSearchState}
+        userListController={userListController}
       />
       <AnimeListLookupStatus lookupState={lookupState} />
     </div>

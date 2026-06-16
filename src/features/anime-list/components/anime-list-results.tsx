@@ -6,7 +6,7 @@ import type { OverlapResult } from "@/features/anime-list/domain/lookup-response
 export function AnimeListResults({
   browseMeta,
   hasNextPage,
-  isGlobalAniListBrowse,
+  isInfiniteResults,
   isPending,
   isRetrying,
   loadNextPage,
@@ -19,7 +19,7 @@ export function AnimeListResults({
     isApproximateWatchStatusSort: boolean
   }
   hasNextPage: boolean
-  isGlobalAniListBrowse: boolean
+  isInfiniteResults: boolean
   isPending: boolean
   isRetrying: boolean
   loadNextPage: () => void
@@ -37,7 +37,7 @@ export function AnimeListResults({
   }, [isPending, isRetrying])
 
   useEffect(() => {
-    if (!isGlobalAniListBrowse || !hasNextPage || !sentinelRef.current) {
+    if (!isInfiniteResults || !hasNextPage || !sentinelRef.current) {
       autoLoadLockedRef.current = false
       return
     }
@@ -62,7 +62,7 @@ export function AnimeListResults({
     observer.observe(sentinelRef.current)
 
     return () => observer.disconnect()
-  }, [hasNextPage, isGlobalAniListBrowse, isPending, isRetrying, loadNextPage])
+  }, [hasNextPage, isInfiniteResults, isPending, isRetrying, loadNextPage])
 
   return (
     <section className="space-y-4">
@@ -93,7 +93,7 @@ export function AnimeListResults({
           ))}
         </div>
       ) : null}
-      {isGlobalAniListBrowse ? (
+      {isInfiniteResults ? (
         <div className="flex flex-col items-center gap-3 pt-2">
           <div className="h-1 w-full" ref={sentinelRef} />
           {hasNextPage ? (

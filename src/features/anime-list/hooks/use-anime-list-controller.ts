@@ -52,8 +52,10 @@ export function useAnimeListController({
     () => deriveAnimeListFacets(lookupState),
     [lookupState]
   )
+  const isUserListMode = activeSearchState.mode === "userList"
   const activeLookupIdentity = getLookupIdentity(activeSearchState)
   const isGlobalAniListBrowse =
+    isUserListMode &&
     activeSearchState.source === "anilist" &&
     activeSearchState.myAnimeFilterMode !== "onlyMine"
   const browseQueryKey = useMemo(
@@ -125,7 +127,7 @@ export function useAnimeListController({
   }, [browseQueryKey, isGlobalAniListBrowse])
 
   useEffect(() => {
-    if (!autoLookupIdentity || isGlobalAniListBrowse) {
+    if (!isUserListMode || !autoLookupIdentity || isGlobalAniListBrowse) {
       return
     }
 
@@ -138,21 +140,23 @@ export function useAnimeListController({
     activeSearchState.username,
     autoLookupIdentity,
     isGlobalAniListBrowse,
+    isUserListMode,
     runLookup,
   ])
 
   useEffect(() => {
-    if (activeSearchState.source === "anilist") {
+    if (!isUserListMode || activeSearchState.source === "anilist") {
       return
     }
 
     cancelAniListRetry()
-  }, [activeSearchState.source, cancelAniListRetry])
+  }, [activeSearchState.source, cancelAniListRetry, isUserListMode])
 
   useEffect(() => {
     void browseRequestKey
 
     if (
+      !isUserListMode ||
       !isGlobalAniListBrowse ||
       !browseSearchStateForRequest.username.trim()
     ) {
@@ -168,6 +172,7 @@ export function useAnimeListController({
     browsePage,
     browseRequestKey,
     browseSearchStateForRequest,
+    isUserListMode,
     isGlobalAniListBrowse,
     runBrowse,
   ])

@@ -24,7 +24,7 @@ describe("AnimeList retry UI", () => {
     render(
       <AnimeListResults
         hasNextPage={false}
-        isGlobalAniListBrowse={false}
+        isInfiniteResults={false}
         isPending={false}
         isRetrying
         loadNextPage={vi.fn()}

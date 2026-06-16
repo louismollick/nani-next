@@ -4,6 +4,7 @@ import {
   difficultyFilterModes,
   mediaStatuses,
   myAnimeFilterModes,
+  searchModes,
   sortDirections,
   sortOptions,
   subtitleAvailabilityOptions,
@@ -81,12 +82,17 @@ export function validateLookupSearch(
   search: Record<string, unknown>
 ): LookupSearchState {
   return {
+    mode: toEnum(search.mode, searchModes, defaultLookupSearchState.mode),
     source: toEnum(
       search.source,
       animeSources,
       defaultLookupSearchState.source
     ),
     username: typeof search.username === "string" ? search.username : "",
+    animeSearchQuery:
+      typeof search.animeSearchQuery === "string"
+        ? search.animeSearchQuery
+        : "",
     myAnimeFilterMode: toEnum(
       search.myAnimeFilterMode,
       myAnimeFilterModes,

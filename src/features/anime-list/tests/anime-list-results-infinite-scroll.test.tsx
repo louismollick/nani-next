@@ -32,7 +32,7 @@ function renderResults(
   return render(
     <AnimeListResults
       hasNextPage
-      isGlobalAniListBrowse
+      isInfiniteResults
       isPending={state.isPending}
       isRetrying={state.isRetrying}
       loadNextPage={loadNextPage}
@@ -108,7 +108,7 @@ describe("AnimeListResults infinite scroll", () => {
       rerender(
         <AnimeListResults
           hasNextPage
-          isGlobalAniListBrowse
+          isInfiniteResults
           isPending
           isRetrying={false}
           loadNextPage={loadNextPage}
@@ -119,7 +119,7 @@ describe("AnimeListResults infinite scroll", () => {
       rerender(
         <AnimeListResults
           hasNextPage
-          isGlobalAniListBrowse
+          isInfiniteResults
           isPending={false}
           isRetrying={false}
           loadNextPage={loadNextPage}

@@ -1,1 +1,6 @@
-export type { Completeness, LookupResponse, OverlapResult } from "@/lib/types"
+export type {
+  AnimeSearchSuggestion,
+  Completeness,
+  LookupResponse,
+  OverlapResult,
+} from "@/lib/types"

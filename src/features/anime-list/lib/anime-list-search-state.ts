@@ -4,6 +4,7 @@ import type {
   DifficultyFilterMode,
   MediaStatus,
   MyAnimeFilterMode,
+  SearchMode,
   SortDirection,
   SortOption,
   SubtitleAvailabilityOption,
@@ -14,8 +15,10 @@ import { serializeAnimeFormatValues } from "@/features/anime-list/lib/anime-meta
 import type { NumericRange } from "@/features/anime-list/lib/range-utils"
 
 export type LookupSearchState = {
+  mode: SearchMode
   source: AnimeSource
   username: string
+  animeSearchQuery: string
   myAnimeFilterMode: MyAnimeFilterMode
   titleQuery: string
   selectedStatuses: WatchStatus[]
@@ -35,8 +38,10 @@ export type LookupSearchState = {
 }
 
 export const defaultLookupSearchState: LookupSearchState = {
+  mode: "userList",
   source: "anilist",
   username: "",
+  animeSearchQuery: "",
   myAnimeFilterMode: "onlyMine",
   titleQuery: "",
   selectedStatuses: ["PLANNING", "PAUSED"],

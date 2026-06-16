@@ -49,4 +49,17 @@ describe("AnimeListRoute", () => {
 
     await waitFor(() => expect(states.at(-1)).toBe("orb"))
   })
+
+  it("renders the anime-search form variant", () => {
+    renderAnimeList({
+      searchState: { mode: "animeSearch" },
+    })
+
+    expect(
+      screen.getByPlaceholderText(/search anime title/i)
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole("combobox", { name: /source/i })
+    ).not.toBeInTheDocument()
+  })
 })
