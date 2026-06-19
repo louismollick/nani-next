@@ -116,7 +116,9 @@ export function useResultCardOverlay(
     setIsTooltipOpen(false)
   }
 
-  const handleLinkBlur = (event: FocusEvent<HTMLAnchorElement>) => {
+  const handleLinkBlur = (
+    event: FocusEvent<HTMLAnchorElement | HTMLButtonElement>
+  ) => {
     if (event.currentTarget.parentElement?.contains(event.relatedTarget)) {
       return
     }

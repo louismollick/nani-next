@@ -4,6 +4,10 @@ import { AnimeListHero } from "@/features/anime-list/components/anime-list-hero"
 import { AnimeListResults } from "@/features/anime-list/components/anime-list-results"
 import type { AnimeListController } from "@/features/anime-list/hooks/use-anime-list-controller"
 import type { AnimeSearchController } from "@/features/anime-list/hooks/use-anime-search-controller"
+import {
+  UpNextQueueMobileTrigger,
+  UpNextQueueSidebar,
+} from "@/features/up-next/components/up-next-queue-panel"
 import { cn } from "@/lib/utils"
 
 export function AnimeListPage({
@@ -46,51 +50,56 @@ export function AnimeListPage({
               className={cn(
                 "animate-in fade-in fill-mode-both duration-500 ease-out",
                 isAnimeSearchMode
-                  ? "grid gap-6"
+                  ? "grid gap-6 lg:grid-cols-[300px_minmax(0,1fr)]"
                   : "grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]"
               )}
             >
-              {!isAnimeSearchMode && userListController.hasResultsState ? (
-                <AnimeListFilters
-                  activeDifficultyBounds={
-                    userListController.activeDifficultyBounds
+              <div className="space-y-6">
+                <UpNextQueueSidebar />
+                {!isAnimeSearchMode && userListController.hasResultsState ? (
+                  <AnimeListFilters
+                    activeDifficultyBounds={
+                      userListController.activeDifficultyBounds
+                    }
+                    activeDifficultyRange={
+                      userListController.activeDifficultyRange
+                    }
+                    availableGenres={userListController.facets.availableGenres}
+                    searchState={userListController.searchState}
+                    updateSearchState={userListController.updateSearchState}
+                  />
+                ) : null}
+              </div>
+              <div className="space-y-4">
+                <UpNextQueueMobileTrigger />
+                <AnimeListResults
+                  browseMeta={
+                    activeController.lookupState?.ok
+                      ? activeController.lookupState.browseMeta
+                      : undefined
                   }
-                  activeDifficultyRange={
-                    userListController.activeDifficultyRange
+                  hasNextPage={
+                    activeController.lookupState?.ok
+                      ? activeController.lookupState.pageInfo?.hasNextPage ===
+                        true
+                      : false
                   }
-                  availableGenres={userListController.facets.availableGenres}
-                  searchState={userListController.searchState}
-                  updateSearchState={userListController.updateSearchState}
+                  isInfiniteResults={
+                    isAnimeSearchMode ||
+                    userListController.isGlobalAniListBrowse
+                  }
+                  isPending={activeController.isPending}
+                  isRetrying={showAniListRetryStatus}
+                  loadNextPage={activeController.loadNextPage}
+                  lookupStateOk={activeController.lookupState?.ok === true}
+                  retryMessage={
+                    showAniListRetryStatus
+                      ? userListController.lookupStatus.retryMessage
+                      : null
+                  }
+                  results={activeController.visibleResults}
                 />
-              ) : !isAnimeSearchMode ? (
-                <div className="hidden lg:block" />
-              ) : null}
-              <AnimeListResults
-                browseMeta={
-                  activeController.lookupState?.ok
-                    ? activeController.lookupState.browseMeta
-                    : undefined
-                }
-                hasNextPage={
-                  activeController.lookupState?.ok
-                    ? activeController.lookupState.pageInfo?.hasNextPage ===
-                      true
-                    : false
-                }
-                isInfiniteResults={
-                  isAnimeSearchMode || userListController.isGlobalAniListBrowse
-                }
-                isPending={activeController.isPending}
-                isRetrying={showAniListRetryStatus}
-                loadNextPage={activeController.loadNextPage}
-                lookupStateOk={activeController.lookupState?.ok === true}
-                retryMessage={
-                  showAniListRetryStatus
-                    ? userListController.lookupStatus.retryMessage
-                    : null
-                }
-                results={activeController.visibleResults}
-              />
+              </div>
             </div>
           ) : null}
         </section>

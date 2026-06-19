@@ -7,6 +7,7 @@ import {
 import { useAnimeSearchController } from "@/features/anime-list/hooks/use-anime-search-controller"
 import type { LookupSearchState } from "@/features/anime-list/lib/anime-list-search-state"
 import { getLookupIdentity } from "@/features/anime-list/lib/anime-list-search-state-identity"
+import { UpNextQueueProvider } from "@/features/up-next/hooks/use-up-next-queue"
 
 export function AnimeListRoute({
   lookup,
@@ -36,9 +37,11 @@ export function AnimeListRoute({
   })
 
   return (
-    <AnimeListPage
-      animeSearchController={animeSearchController}
-      userListController={userListController}
-    />
+    <UpNextQueueProvider>
+      <AnimeListPage
+        animeSearchController={animeSearchController}
+        userListController={userListController}
+      />
+    </UpNextQueueProvider>
   )
 }

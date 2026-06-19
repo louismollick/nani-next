@@ -1,3 +1,4 @@
+import { ListOrdered } from "lucide-react"
 import { useRef } from "react"
 import {
   Drawer,
@@ -12,13 +13,29 @@ import { ResultCardSummary } from "@/features/anime-list/components/result-card-
 import { ResultCardTooltip } from "@/features/anime-list/components/result-card-tooltip"
 import { useResultCardOverlay } from "@/features/anime-list/hooks/use-result-card-overlay"
 import { getResultTitle } from "@/features/anime-list/lib/result-presenters"
+import { useUpNextQueue } from "@/features/up-next/hooks/use-up-next-queue"
 import type { OverlapResult } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
 export function ResultCard({ result }: { result: OverlapResult }) {
   const hoverTargetRef = useRef<HTMLDivElement | null>(null)
   const overlay = useResultCardOverlay(hoverTargetRef)
+  const upNextQueue = useUpNextQueue()
+  const queuePosition = upNextQueue.positionOf(result)
+  const queueActionLabel = getQueueActionLabel({
+    isQueued: queuePosition !== -1,
+    position: queuePosition,
+    result,
+  })
   const links = ResultCardLinks({
+    extraActions: [
+      {
+        icon: <ListOrdered className="size-4 shrink-0" />,
+        label: queueActionLabel,
+        onClick: () => upNextQueue.openAddModal(result),
+        variant: queuePosition === -1 ? "default" : "secondary",
+      },
+    ],
     onBlur: overlay.handleLinkBlur,
     onFocus: () => overlay.setIsTooltipOpen(true),
     onPointerEnter: () => overlay.setIsTooltipOpen(true),
@@ -86,4 +103,26 @@ export function ResultCard({ result }: { result: OverlapResult }) {
       </DrawerContent>
     </Drawer>
   )
+}
+
+function getQueueActionLabel({
+  isQueued,
+  position,
+  result,
+}: {
+  isQueued: boolean
+  position: number
+  result: OverlapResult
+}) {
+  const warning = !result.matchedJimaku
+    ? "No subtitles"
+    : result.completeness === "incomplete"
+      ? "Subtitles incomplete"
+      : !result.matchedJpdb && !result.matchedLearnNatively
+        ? "Difficulty unknown"
+        : null
+
+  const prefix = isQueued ? `Queued #${position + 1}` : "Add to Up Next"
+
+  return warning ? `${prefix} · ${warning}` : prefix
 }
