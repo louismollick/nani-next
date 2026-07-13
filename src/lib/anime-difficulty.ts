@@ -1,12 +1,16 @@
+import jitenAnimeDifficultySnapshot from "@/data/jiten-anime-difficulty.json"
 import jpdbAnimeDifficultySnapshot from "@/data/jpdb-anime-difficulty.json"
 import learnNativelyAnimationLevelsSnapshot from "@/data/learnnatively-animation-levels.json"
 import type {
+  JitenAnimeDifficultyEntry,
   JpdbAnimeDifficultyEntry,
   LearnNativelyAnimationLevelEntry,
   LearnNativelyJlptEquivalent,
 } from "@/lib/types"
 
 let cachedJpdbAnimeDifficultySnapshot: JpdbAnimeDifficultyEntry[] | null = null
+let cachedJitenAnimeDifficultySnapshot: JitenAnimeDifficultyEntry[] | null =
+  null
 let cachedLearnNativelyAnimationLevelsSnapshot:
   | LearnNativelyAnimationLevelEntry[]
   | null = null
@@ -20,6 +24,18 @@ export function loadJpdbAnimeDifficultySnapshot() {
     jpdbAnimeDifficultySnapshot as JpdbAnimeDifficultyEntry[]
 
   return cachedJpdbAnimeDifficultySnapshot
+}
+
+export function loadJitenAnimeDifficultySnapshot() {
+  if (!cachedJitenAnimeDifficultySnapshot) {
+    cachedJitenAnimeDifficultySnapshot =
+      jitenAnimeDifficultySnapshot as JitenAnimeDifficultyEntry[]
+  }
+  return cachedJitenAnimeDifficultySnapshot
+}
+
+export function getJitenDifficulty(entry: JitenAnimeDifficultyEntry) {
+  return Math.round(entry.difficultyRaw * 10) / 10
 }
 
 export function loadLearnNativelyAnimationLevelsSnapshot() {

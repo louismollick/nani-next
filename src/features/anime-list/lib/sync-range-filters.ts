@@ -13,6 +13,10 @@ export function syncRangeFilters(
     previousState.jpdbDifficultyRange,
     facets.availableJpdbDifficultyBounds
   )
+  const nextJiten = normalizeStoredRange(
+    previousState.jitenDifficultyRange,
+    facets.availableJitenDifficultyBounds
+  )
   const nextYear = normalizeStoredRange(
     previousState.yearRange,
     facets.availableYearBounds
@@ -38,6 +42,7 @@ export function syncRangeFilters(
     rangesEqual(previousState.episodeRange, nextEpisode) &&
     rangesEqual(previousState.durationRange, nextDuration) &&
     rangesEqual(previousState.jpdbDifficultyRange, nextJpdb) &&
+    rangesEqual(previousState.jitenDifficultyRange, nextJiten) &&
     rangesEqual(previousState.learnNativelyLevelRange, nextLevel) &&
     rangesEqual(previousState.learnNativelyJlptRange, nextJlpt)
     ? previousState
@@ -47,6 +52,7 @@ export function syncRangeFilters(
         episodeRange: nextEpisode,
         durationRange: nextDuration,
         jpdbDifficultyRange: nextJpdb,
+        jitenDifficultyRange: nextJiten,
         learnNativelyLevelRange: nextLevel,
         learnNativelyJlptRange: nextJlpt,
       }

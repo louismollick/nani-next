@@ -3,6 +3,7 @@ import type {
   AnimeEntry,
   DatasetMatch,
   JimakuEntry,
+  JitenAnimeDifficultyEntry,
   JpdbAnimeDifficultyEntry,
   LearnNativelyAnimationLevelEntry,
   MatchCandidate,
@@ -432,6 +433,30 @@ export function matchJpdbAnimeDifficulty(
   return toDatasetMatch(
     getCachedDatasetMatcher(jpdbEntries, (jpdbEntry) => [jpdbEntry.name])(entry)
   )
+}
+
+export function matchJitenAnimeDifficulty(
+  entry: AnimeEntry,
+  jitenEntries: JitenAnimeDifficultyEntry[]
+): DatasetMatch<JitenAnimeDifficultyEntry> | null {
+  const anilistId = entry.media.anilistId
+  if (anilistId !== null) {
+    const match = jitenEntries.find(
+      (candidate) => candidate.anilistId === anilistId
+    )
+    if (match) return { entry: match, matchScore: 1, matchReason: "anilist-id" }
+  }
+
+  const myanimelistId = entry.media.myanimelistId
+  if (myanimelistId !== null) {
+    const match = jitenEntries.find(
+      (candidate) => candidate.myanimelistId === myanimelistId
+    )
+    if (match)
+      return { entry: match, matchScore: 1, matchReason: "myanimelist-id" }
+  }
+
+  return null
 }
 
 export function matchLearnNativelyAnimationLevel(

@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start"
 import { normalizeAnimeFormat } from "@/features/anime-list/lib/anime-metadata-filters"
 import { buildAnimeListOverlapResults } from "@/features/anime-list/server/build-overlap-results"
 import {
+  loadJitenAnimeDifficultySnapshot,
   loadJpdbAnimeDifficultySnapshot,
   loadLearnNativelyAnimationLevelsSnapshot,
 } from "@/features/anime-list/server/load-anime-difficulty-snapshots"
@@ -240,15 +241,18 @@ export async function searchAniListByTitle(
   const entries = pageData.media
     .filter((media) => media.status !== "NOT_YET_RELEASED")
     .map(toAnimeEntry)
-  const [jimakuEntries, jpdbEntries, learnNativelyEntries] = await Promise.all([
-    loadJimakuSnapshot(),
-    loadJpdbAnimeDifficultySnapshot(),
-    loadLearnNativelyAnimationLevelsSnapshot(),
-  ])
+  const [jimakuEntries, jpdbEntries, jitenEntries, learnNativelyEntries] =
+    await Promise.all([
+      loadJimakuSnapshot(),
+      loadJpdbAnimeDifficultySnapshot(),
+      loadJitenAnimeDifficultySnapshot(),
+      loadLearnNativelyAnimationLevelsSnapshot(),
+    ])
   const results = buildAnimeListOverlapResults(
     entries,
     jimakuEntries,
     jpdbEntries,
+    jitenEntries,
     learnNativelyEntries
   )
 

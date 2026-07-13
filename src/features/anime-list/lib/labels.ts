@@ -13,6 +13,7 @@ export const difficultyFilterModeLabels: Record<DifficultyFilterMode, string> =
   {
     none: "No difficulty filter",
     jpdbAverageDifficulty: "JPDB Average Difficulty",
+    jitenDifficulty: "Jiten Difficulty",
     learnNativelyLevel: "LearnNatively Level",
     learnNativelyJlptEquivalent: "LearnNatively JLPT Equivalent",
   }
@@ -30,6 +31,7 @@ export const sortOptionLabels: Record<SortOption, string> = {
   averageScore: "Average Score",
   popularity: "Popularity",
   jpdbAverageDifficulty: "JPDB Average Difficulty",
+  jitenDifficulty: "Jiten Difficulty",
   learnNativelyLevel: "LearnNatively Level",
   title: "Title",
   status: "Watch Status",

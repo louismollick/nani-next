@@ -91,6 +91,18 @@
         "matchReason": "exact-title",
         "jlptEquivalent": "N4",
         "levelNumber": 12
+      },
+      "matchedJiten": {
+        "entry": {
+          "deckId": 101,
+          "jitenUrl": "https://jiten.moe/decks/media/101/detail",
+          "titles": ["Blue Box"],
+          "anilistId": 11,
+          "myanimelistId": 11,
+          "difficultyRaw": 2.74
+        },
+        "matchScore": 1,
+        "matchReason": "anilist-id"
       }
     },
     {

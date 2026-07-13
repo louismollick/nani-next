@@ -98,6 +98,10 @@ export function formatDifficultyRangeValue(
     return `L${value}`
   }
 
+  if (mode === "jitenDifficulty") {
+    return `${value.toFixed(1)}/5`
+  }
+
   if (mode === "learnNativelyJlptEquivalent") {
     return (
       learnNativelyJlptEquivalents[value] ?? learnNativelyJlptEquivalents[0]

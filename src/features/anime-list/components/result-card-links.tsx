@@ -24,6 +24,59 @@ function SourceLogo({
   )
 }
 
+function buildResultLinks(result: OverlapResult) {
+  const links = [
+    {
+      href: result.entry.media.siteUrl,
+      label: getSourceLabel(result.entry.source),
+      icon: (
+        <SourceLogo
+          className="size-4 shrink-0 rounded-sm"
+          source={result.entry.source}
+        />
+      ),
+    },
+  ]
+  const optionalLinks = [
+    result.matchedJimaku && [
+      result.matchedJimaku.url,
+      "Jimaku",
+      "/jimaku-favicon.ico",
+    ],
+    result.matchedJpdb && [
+      result.matchedJpdb.entry.jpdbUrl,
+      "JPDB",
+      "/jpdb-favicon-32x32.png",
+    ],
+    result.matchedLearnNatively && [
+      result.matchedLearnNatively.entry.learnnativelyUrl,
+      "LearnNatively",
+      "/learnnatively-favicon-32x32.png",
+    ],
+    result.matchedJiten && [
+      result.matchedJiten.entry.jitenUrl,
+      "Jiten",
+      "/jiten-favicon-32x32.png",
+    ],
+  ].filter((link): link is string[] => Boolean(link))
+
+  for (const [href, label, src] of optionalLinks) {
+    links.push({
+      href,
+      label,
+      icon: (
+        <img
+          alt=""
+          aria-hidden="true"
+          className="size-4 shrink-0 rounded-sm"
+          src={src}
+        />
+      ),
+    })
+  }
+  return links
+}
+
 export function ResultCardLinks({
   onBlur,
   onFocus,
@@ -37,60 +90,7 @@ export function ResultCardLinks({
   onPointerLeave?: () => void
   result: OverlapResult
 }) {
-  const links = [
-    {
-      href: result.entry.media.siteUrl,
-      label: getSourceLabel(result.entry.source),
-      icon: (
-        <SourceLogo
-          className="size-4 shrink-0 rounded-sm"
-          source={result.entry.source}
-        />
-      ),
-    },
-  ]
-  if (result.matchedJimaku) {
-    links.push({
-      href: result.matchedJimaku.url,
-      label: "Jimaku",
-      icon: (
-        <img
-          alt=""
-          aria-hidden="true"
-          className="size-4 shrink-0"
-          src="/jimaku-favicon.ico"
-        />
-      ),
-    })
-  }
-  if (result.matchedJpdb) {
-    links.push({
-      href: result.matchedJpdb.entry.jpdbUrl,
-      label: "JPDB",
-      icon: (
-        <img
-          alt=""
-          aria-hidden="true"
-          className="size-4 shrink-0 rounded-sm"
-          src="/jpdb-favicon-32x32.png"
-        />
-      ),
-    })
-  }
-  if (result.matchedLearnNatively) {
-    links.push({
-      href: result.matchedLearnNatively.entry.learnnativelyUrl,
-      label: "LearnNatively",
-      icon: (
-        <img
-          alt=""
-          aria-hidden="true"
-          className="size-4 shrink-0 rounded-sm"
-          src="/learnnatively-favicon-32x32.png"
-        />
-      ),
-    })
-  }
+  const links = buildResultLinks(result)
 
   return {
     actions: (

@@ -31,6 +31,7 @@ export const sortOptions = [
   "averageScore",
   "popularity",
   "jpdbAverageDifficulty",
+  "jitenDifficulty",
   "learnNativelyLevel",
   "title",
   "status",
@@ -40,6 +41,7 @@ export const subtitleAvailabilityOptions = ["all", "some", "none"] as const
 export const difficultyFilterModes = [
   "none",
   "jpdbAverageDifficulty",
+  "jitenDifficulty",
   "learnNativelyLevel",
   "learnNativelyJlptEquivalent",
 ] as const
@@ -146,6 +148,15 @@ export type LearnNativelyAnimationLevelEntry = {
   level: string
 }
 
+export type JitenAnimeDifficultyEntry = {
+  deckId: number
+  jitenUrl: string
+  titles: string[]
+  anilistId: number | null
+  myanimelistId: number | null
+  difficultyRaw: number
+}
+
 export type MatchReason =
   | "anilist-id"
   | "myanimelist-id"
@@ -182,6 +193,7 @@ export type OverlapResult = {
   isAmbiguous: boolean
   completeness: Completeness
   matchedJpdb?: DatasetMatch<JpdbAnimeDifficultyEntry>
+  matchedJiten?: DatasetMatch<JitenAnimeDifficultyEntry>
   matchedLearnNatively?: LearnNativelyMatch
 }
 

@@ -115,6 +115,14 @@ export function canonicalizeLookupSearch(search: LookupSearchState) {
   }
   if (
     !rangesEqual(
+      search.jitenDifficultyRange,
+      defaultLookupSearchState.jitenDifficultyRange
+    )
+  ) {
+    canonicalSearch.jitenDifficultyRange = search.jitenDifficultyRange
+  }
+  if (
+    !rangesEqual(
       search.learnNativelyLevelRange,
       defaultLookupSearchState.learnNativelyLevelRange
     )

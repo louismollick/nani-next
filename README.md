@@ -14,6 +14,7 @@ The app combines data from:
 - Jimaku for Japanese subtitle availability
 - jpdb.io for subtitle difficulty data
 - Learn Natively for rough reading level
+- Jiten for anime difficulty ratings
 
 ## Local dev
 
@@ -28,4 +29,5 @@ pnpm dev
 pnpm refresh-jimaku-snapshot
 pnpm refresh-jpdb-anime-difficulty
 pnpm refresh-learnnatively-animation-levels
+pnpm refresh-jiten-anime-difficulty
 ```

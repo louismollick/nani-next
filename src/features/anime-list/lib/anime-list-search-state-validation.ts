@@ -129,6 +129,7 @@ export function validateLookupSearch(
       defaultLookupSearchState.difficultyFilterMode
     ),
     jpdbDifficultyRange: toNumberRange(search.jpdbDifficultyRange),
+    jitenDifficultyRange: toNumberRange(search.jitenDifficultyRange),
     learnNativelyLevelRange: toNumberRange(search.learnNativelyLevelRange),
     learnNativelyJlptRange: toNumberRange(search.learnNativelyJlptRange),
     sortBy: toEnum(search.sortBy, sortOptions, defaultLookupSearchState.sortBy),

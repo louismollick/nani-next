@@ -58,7 +58,7 @@ export function AnimeListDifficultyRange({
             )
           )
         }
-        step={1}
+        step={searchState.difficultyFilterMode === "jitenDifficulty" ? 0.1 : 1}
         value={activeDifficultyRange}
       />
       <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -99,6 +99,10 @@ function applyDifficultyRange(
       previousState.difficultyFilterMode === "jpdbAverageDifficulty"
         ? normalizeStoredRange(normalizedNextRange, bounds)
         : previousState.jpdbDifficultyRange,
+    jitenDifficultyRange:
+      previousState.difficultyFilterMode === "jitenDifficulty"
+        ? normalizeStoredRange(normalizedNextRange, bounds)
+        : previousState.jitenDifficultyRange,
     learnNativelyLevelRange:
       previousState.difficultyFilterMode === "learnNativelyLevel"
         ? normalizeStoredRange(normalizedNextRange, bounds)

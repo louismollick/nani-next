@@ -154,6 +154,22 @@ export function filterAnimeListResults(
           result.matchedLearnNatively.levelNumber <= range[1]
       )
     }
+    if (searchState.difficultyFilterMode === "jitenDifficulty") {
+      const range =
+        normalizeRange(
+          searchState.jitenDifficultyRange,
+          facets.availableJitenDifficultyBounds
+        ) ?? facets.availableJitenDifficultyBounds
+      const difficulty = result.matchedJiten
+        ? Math.round(result.matchedJiten.entry.difficultyRaw * 10) / 10
+        : null
+      return Boolean(
+        difficulty !== null &&
+          range &&
+          difficulty >= range[0] &&
+          difficulty <= range[1]
+      )
+    }
     if (searchState.difficultyFilterMode !== "learnNativelyJlptEquivalent")
       return true
     const range =

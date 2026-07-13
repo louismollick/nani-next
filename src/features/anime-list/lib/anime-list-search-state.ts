@@ -31,6 +31,7 @@ export type LookupSearchState = {
   durationRange: NumericRange | null
   difficultyFilterMode: DifficultyFilterMode
   jpdbDifficultyRange: NumericRange | null
+  jitenDifficultyRange: NumericRange | null
   learnNativelyLevelRange: NumericRange | null
   learnNativelyJlptRange: NumericRange | null
   sortBy: SortOption
@@ -54,6 +55,7 @@ export const defaultLookupSearchState: LookupSearchState = {
   durationRange: null,
   difficultyFilterMode: "none",
   jpdbDifficultyRange: null,
+  jitenDifficultyRange: null,
   learnNativelyLevelRange: null,
   learnNativelyJlptRange: null,
   sortBy: "averageScore",

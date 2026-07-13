@@ -68,6 +68,19 @@ export function sortAnimeListResults(
         right
       )
     }
+    if (sortBy === "jitenDifficulty") {
+      return compareOptionalNumbers(
+        left.matchedJiten
+          ? Math.round(left.matchedJiten.entry.difficultyRaw * 10) / 10
+          : undefined,
+        right.matchedJiten
+          ? Math.round(right.matchedJiten.entry.difficultyRaw * 10) / 10
+          : undefined,
+        sortDirection,
+        left,
+        right
+      )
+    }
     if (sortBy === "title")
       return sortDirection === "desc"
         ? compareTitles(left, right) * -1

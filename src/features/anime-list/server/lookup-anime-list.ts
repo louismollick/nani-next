@@ -10,6 +10,7 @@ import {
 import { fetchAniListEntries } from "@/features/anime-list/server/fetch-anilist-entries"
 import { fetchMyAnimeListEntries } from "@/features/anime-list/server/fetch-myanimelist-entries"
 import {
+  loadJitenAnimeDifficultySnapshot,
   loadJpdbAnimeDifficultySnapshot,
   loadLearnNativelyAnimationLevelsSnapshot,
 } from "@/features/anime-list/server/load-anime-difficulty-snapshots"
@@ -42,13 +43,19 @@ export async function findAnimeListOverlap(
     return cachedResponse
   }
 
-  const [entryResult, jimakuEntries, jpdbEntries, learnNativelyEntries] =
-    await Promise.all([
-      fetchSourceEntries(source, trimmedUsername),
-      loadJimakuSnapshot(),
-      loadJpdbAnimeDifficultySnapshot(),
-      loadLearnNativelyAnimationLevelsSnapshot(),
-    ])
+  const [
+    entryResult,
+    jimakuEntries,
+    jpdbEntries,
+    jitenEntries,
+    learnNativelyEntries,
+  ] = await Promise.all([
+    fetchSourceEntries(source, trimmedUsername),
+    loadJimakuSnapshot(),
+    loadJpdbAnimeDifficultySnapshot(),
+    loadJitenAnimeDifficultySnapshot(),
+    loadLearnNativelyAnimationLevelsSnapshot(),
+  ])
 
   if (!Array.isArray(entryResult)) {
     await writeCachedLookupResponse(source, trimmedUsername, entryResult)
@@ -60,6 +67,7 @@ export async function findAnimeListOverlap(
       entryResult,
       jimakuEntries,
       jpdbEntries,
+      jitenEntries,
       learnNativelyEntries
     )
   )

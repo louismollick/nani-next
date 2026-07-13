@@ -13,6 +13,7 @@ import {
   sortAnimeListOverlapResults,
 } from "@/features/anime-list/server/build-overlap-results"
 import {
+  loadJitenAnimeDifficultySnapshot,
   loadJpdbAnimeDifficultySnapshot,
   loadLearnNativelyAnimationLevelsSnapshot,
 } from "@/features/anime-list/server/load-anime-difficulty-snapshots"
@@ -51,6 +52,7 @@ export type BrowseInput = {
       | "averageScore"
       | "popularity"
       | "jpdbAverageDifficulty"
+      | "jitenDifficulty"
       | "learnNativelyLevel"
       | "title"
       | "status"
@@ -137,6 +139,7 @@ type BrowseQueryState = {
   hitCap: boolean
   jimakuEntries: Awaited<ReturnType<typeof loadJimakuSnapshot>>
   jpdbEntries: Awaited<ReturnType<typeof loadJpdbAnimeDifficultySnapshot>>
+  jitenEntries: Awaited<ReturnType<typeof loadJitenAnimeDifficultySnapshot>>
   learnNativelyEntries: Awaited<
     ReturnType<typeof loadLearnNativelyAnimationLevelsSnapshot>
   >
@@ -497,6 +500,10 @@ function matchesDifficultyFilter(
     return Boolean(result.matchedJpdb)
   }
 
+  if (sortBy === "jitenDifficulty") {
+    return Boolean(result.matchedJiten)
+  }
+
   if (sortBy === "learnNativelyLevel") {
     return Boolean(result.matchedLearnNatively)
   }
@@ -620,6 +627,28 @@ function sortGlobalResults(results: OverlapResult[], search: BrowseSearch) {
     })
   }
 
+  if (search.sortBy === "jitenDifficulty") {
+    return [...results].sort((left, right) => {
+      const leftValue = left.matchedJiten
+        ? Math.round(left.matchedJiten.entry.difficultyRaw * 10) / 10
+        : undefined
+      const rightValue = right.matchedJiten
+        ? Math.round(right.matchedJiten.entry.difficultyRaw * 10) / 10
+        : undefined
+      const titleDelta = (left.entry.media.title.primary ?? "").localeCompare(
+        right.entry.media.title.primary ?? ""
+      )
+      if (leftValue === undefined && rightValue === undefined) return titleDelta
+      if (leftValue === undefined) return 1
+      if (rightValue === undefined) return -1
+      const difficultyDelta =
+        search.sortDirection === "desc"
+          ? rightValue - leftValue
+          : leftValue - rightValue
+      return difficultyDelta || titleDelta
+    })
+  }
+
   if (search.sortBy === "learnNativelyLevel") {
     return [...results].sort((left, right) => {
       const leftValue =
@@ -639,13 +668,15 @@ function buildFilteredGlobalResults({
   collectedEntries,
   jimakuEntries,
   jpdbEntries,
+  jitenEntries,
   learnNativelyEntries,
   search,
 }: {
   collectedEntries: AnimeEntry[]
   jimakuEntries: Parameters<typeof buildAnimeListOverlapResults>[1]
   jpdbEntries: Parameters<typeof buildAnimeListOverlapResults>[2]
-  learnNativelyEntries: Parameters<typeof buildAnimeListOverlapResults>[3]
+  jitenEntries: Parameters<typeof buildAnimeListOverlapResults>[3]
+  learnNativelyEntries: Parameters<typeof buildAnimeListOverlapResults>[4]
   search: BrowseSearch
 }) {
   return sortGlobalResults(
@@ -653,6 +684,7 @@ function buildFilteredGlobalResults({
       collectedEntries,
       jimakuEntries,
       jpdbEntries,
+      jitenEntries,
       learnNativelyEntries
     ).filter(
       (result) =>
@@ -775,13 +807,19 @@ async function getOrCreateBrowseQueryState(
     return { queryKey, queryState: cached }
   }
 
-  const [membershipEntries, jimakuEntries, jpdbEntries, learnNativelyEntries] =
-    await Promise.all([
-      fetchMembership(trimmedUsername),
-      loadJimakuSnapshot(),
-      loadJpdbAnimeDifficultySnapshot(),
-      loadLearnNativelyAnimationLevelsSnapshot(),
-    ])
+  const [
+    membershipEntries,
+    jimakuEntries,
+    jpdbEntries,
+    jitenEntries,
+    learnNativelyEntries,
+  ] = await Promise.all([
+    fetchMembership(trimmedUsername),
+    loadJimakuSnapshot(),
+    loadJpdbAnimeDifficultySnapshot(),
+    loadJitenAnimeDifficultySnapshot(),
+    loadLearnNativelyAnimationLevelsSnapshot(),
+  ])
 
   const queryState: BrowseQueryState = {
     collectedEntries: [],
@@ -794,6 +832,7 @@ async function getOrCreateBrowseQueryState(
     hitCap: false,
     jimakuEntries,
     jpdbEntries,
+    jitenEntries,
     learnNativelyEntries,
     loops: 0,
     membershipEntries,
@@ -860,6 +899,7 @@ async function ensureBrowseQueryPage(
       collectedEntries: queryState.collectedEntries,
       jimakuEntries: queryState.jimakuEntries,
       jpdbEntries: queryState.jpdbEntries,
+      jitenEntries: queryState.jitenEntries,
       learnNativelyEntries: queryState.learnNativelyEntries,
       search: queryState.search,
     })

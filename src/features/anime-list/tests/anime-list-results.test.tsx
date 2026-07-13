@@ -78,7 +78,9 @@ describe("AnimeListResults", () => {
     expectAverageScoreMetadata(dialog)
     viewportSpy.mockRestore()
   })
+})
 
+describe("AnimeListResults desktop cards", () => {
   it("keeps desktop platform links interactive and restores full metadata", async () => {
     renderAnimeList({
       lookup: vi.fn().mockResolvedValue(successResponse()),
@@ -105,6 +107,14 @@ describe("AnimeListResults", () => {
     expect(
       document.querySelector('img[src="/learnnatively-favicon-32x32.png"]')
     ).toBeTruthy()
+    expect(await screen.findByRole("link", { name: /jiten/i })).toHaveAttribute(
+      "href",
+      "https://jiten.moe/decks/media/101/detail"
+    )
+    expect(
+      document.querySelector('img[src="/jiten-favicon-32x32.png"]')
+    ).toBeTruthy()
+    expect(card).toHaveTextContent("2.7/5")
 
     const tooltip = await screen.findByText("Unique kanji")
     const tooltipPanel =

@@ -19,6 +19,7 @@ export type AnimeListFacets = {
   availableEpisodeBounds: NumericRange
   availableDurationBounds: NumericRange
   availableJpdbDifficultyBounds: NumericRange | null
+  availableJitenDifficultyBounds: NumericRange | null
   availableLearnNativelyLevelBounds: NumericRange | null
   availableLearnNativelyJlptBounds: NumericRange | null
 }
@@ -34,6 +35,7 @@ export function deriveAnimeListFacets(
       availableEpisodeBounds: episodeFilterBounds,
       availableDurationBounds: durationFilterBounds,
       availableJpdbDifficultyBounds: null,
+      availableJitenDifficultyBounds: null,
       availableLearnNativelyLevelBounds: null,
       availableLearnNativelyJlptBounds: null,
     }
@@ -65,6 +67,12 @@ export function deriveAnimeListFacets(
       lookupState.results
         .map((result) => result.matchedJpdb?.entry.averageDifficulty)
         .filter((value): value is number => typeof value === "number")
+    ),
+    availableJitenDifficultyBounds: getNumericBounds(
+      lookupState.results
+        .map((result) => result.matchedJiten?.entry.difficultyRaw)
+        .filter((value): value is number => typeof value === "number")
+        .map((value) => Math.round(value * 10) / 10)
     ),
     availableLearnNativelyLevelBounds,
     availableLearnNativelyJlptBounds: availableLearnNativelyLevelBounds

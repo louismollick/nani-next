@@ -139,6 +139,7 @@ describe("buildOverlapResults", () => {
       [finishedEntry],
       [jimakuEntry],
       [jpdbEntry],
+      [],
       [learnNativelyEntry]
     )
 
@@ -148,14 +149,20 @@ describe("buildOverlapResults", () => {
   })
 
   it("leaves difficulty matches undefined when datasets do not match", () => {
-    const [result] = buildOverlapResults([finishedEntry], [jimakuEntry], [], [])
+    const [result] = buildOverlapResults(
+      [finishedEntry],
+      [jimakuEntry],
+      [],
+      [],
+      []
+    )
 
     expect(result?.matchedJpdb).toBeUndefined()
     expect(result?.matchedLearnNatively).toBeUndefined()
   })
 
   it("keeps unmatched anime in the results", () => {
-    const [result] = buildOverlapResults([finishedEntry], [], [], [])
+    const [result] = buildOverlapResults([finishedEntry], [], [], [], [])
 
     expect(result).toMatchObject({
       matchedJimaku: null,

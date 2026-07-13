@@ -4,6 +4,7 @@ import {
 } from "@/features/anime-list/server/load-anime-difficulty-snapshots"
 import {
   matchAnime,
+  matchJitenAnimeDifficulty,
   matchJpdbAnimeDifficulty,
   matchLearnNativelyAnimationLevel,
 } from "@/features/anime-list/server/matching"
@@ -12,6 +13,7 @@ import type {
   AnimeEntry,
   Completeness,
   JimakuEntry,
+  JitenAnimeDifficultyEntry,
   JpdbAnimeDifficultyEntry,
   LearnNativelyAnimationLevelEntry,
   OverlapResult,
@@ -66,6 +68,7 @@ export function buildAnimeListOverlapResults(
   entries: AnimeEntry[],
   jimakuEntries: JimakuEntry[],
   jpdbEntries: JpdbAnimeDifficultyEntry[],
+  jitenEntries: JitenAnimeDifficultyEntry[],
   learnNativelyEntries: LearnNativelyAnimationLevelEntry[]
 ) {
   return entries.map((entry) => {
@@ -98,6 +101,7 @@ export function buildAnimeListOverlapResults(
         ? getAnimeListCompleteness(entry, matched.matchedJimaku.fileCount)
         : "unknown",
       matchedJpdb: matchJpdbAnimeDifficulty(entry, jpdbEntries) ?? undefined,
+      matchedJiten: matchJitenAnimeDifficulty(entry, jitenEntries) ?? undefined,
       matchedLearnNatively:
         matchedLearnNativelyBase && jlptEquivalent && levelNumber !== null
           ? { ...matchedLearnNativelyBase, jlptEquivalent, levelNumber }

@@ -14,6 +14,10 @@ export function getActiveDifficultyBounds(
     return facets.availableLearnNativelyLevelBounds
   }
 
+  if (searchState.difficultyFilterMode === "jitenDifficulty") {
+    return facets.availableJitenDifficultyBounds
+  }
+
   return searchState.difficultyFilterMode === "learnNativelyJlptEquivalent"
     ? facets.availableLearnNativelyJlptBounds
     : null
@@ -38,6 +42,15 @@ export function getActiveDifficultyRange(
         searchState.learnNativelyLevelRange,
         facets.availableLearnNativelyLevelBounds
       ) ?? facets.availableLearnNativelyLevelBounds
+    )
+  }
+
+  if (searchState.difficultyFilterMode === "jitenDifficulty") {
+    return (
+      normalizeRange(
+        searchState.jitenDifficultyRange,
+        facets.availableJitenDifficultyBounds
+      ) ?? facets.availableJitenDifficultyBounds
     )
   }
 

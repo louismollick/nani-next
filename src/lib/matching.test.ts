@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest"
 import {
   matchAnime,
+  matchJitenAnimeDifficulty,
   matchJpdbAnimeDifficulty,
   matchLearnNativelyAnimationLevel,
 } from "@/lib/matching"
 import type {
   AnimeEntry,
   JimakuEntry,
+  JitenAnimeDifficultyEntry,
   JpdbAnimeDifficultyEntry,
   LearnNativelyAnimationLevelEntry,
 } from "@/lib/types"
@@ -82,6 +84,15 @@ const baseLearnNativelyEntry: LearnNativelyAnimationLevelEntry = {
     "https://learnnatively.com/season/march-comes-in-like-a-lion/",
   name: "March comes in like a lion",
   level: "L20",
+}
+
+const baseJitenEntry: JitenAnimeDifficultyEntry = {
+  deckId: 10,
+  jitenUrl: "https://jiten.moe/decks/media/10/detail",
+  titles: ["Unrelated title"],
+  anilistId: 101,
+  myanimelistId: 201,
+  difficultyRaw: 2.74,
 }
 
 describe("matchAnime", () => {
@@ -239,6 +250,33 @@ describe("matchAnime", () => {
 
     expect(result?.matchReason).toBe("exact-title")
     expect(result?.entry.averageDifficulty).toBe(25)
+  })
+
+  it("matches Jiten by AniList ID before MAL ID", () => {
+    const result = matchJitenAnimeDifficulty(baseAniListEntry, [
+      { ...baseJitenEntry, deckId: 11, anilistId: null, difficultyRaw: 4.2 },
+      baseJitenEntry,
+    ])
+
+    expect(result?.entry.deckId).toBe(10)
+    expect(result?.matchReason).toBe("anilist-id")
+  })
+
+  it("falls back to MAL ID and never title-matches Jiten", () => {
+    const malResult = matchJitenAnimeDifficulty(baseAniListEntry, [
+      { ...baseJitenEntry, anilistId: null },
+    ])
+    const titleResult = matchJitenAnimeDifficulty(baseAniListEntry, [
+      {
+        ...baseJitenEntry,
+        anilistId: null,
+        myanimelistId: null,
+        titles: ["3-gatsu no Lion"],
+      },
+    ])
+
+    expect(malResult?.matchReason).toBe("myanimelist-id")
+    expect(titleResult).toBeNull()
   })
 
   it("matches LearnNatively entries on exact normalized titles", () => {

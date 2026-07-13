@@ -90,7 +90,7 @@ function MetadataBadge({ result }: { result: OverlapResult }) {
     result.entry.media.averageScore
   )
   const hasDifficultySources = Boolean(
-    result.matchedJpdb || result.matchedLearnNatively
+    result.matchedJpdb || result.matchedJiten || result.matchedLearnNatively
   )
   const hasMultipleRows = Boolean(averageScore && hasDifficultySources)
 
@@ -122,6 +122,22 @@ function MetadataBadge({ result }: { result: OverlapResult }) {
               />
               <span>
                 Difficulty {result.matchedJpdb.entry.averageDifficulty}/100
+              </span>
+            </div>
+          ) : null}
+          {result.matchedJiten ? (
+            <div className="flex items-center gap-1.5">
+              <img
+                alt=""
+                aria-hidden="true"
+                className="size-3.5 rounded-sm"
+                src="/jiten-favicon-32x32.png"
+              />
+              <span>
+                {(
+                  Math.round(result.matchedJiten.entry.difficultyRaw * 10) / 10
+                ).toFixed(1)}
+                /5
               </span>
             </div>
           ) : null}
