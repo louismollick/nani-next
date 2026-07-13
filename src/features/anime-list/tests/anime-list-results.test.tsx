@@ -111,9 +111,7 @@ describe("AnimeListResults desktop cards", () => {
       "href",
       "https://jiten.moe/decks/media/101/detail"
     )
-    expect(
-      document.querySelector('img[src="/jiten-favicon-32x32.png"]')
-    ).toBeTruthy()
+    expect(document.querySelector('img[src="/jiten-favicon.ico"]')).toBeTruthy()
     expect(card).toHaveTextContent("2.7/5")
 
     const tooltip = await screen.findByText("Unique kanji")

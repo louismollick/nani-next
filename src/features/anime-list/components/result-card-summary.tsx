@@ -132,7 +132,7 @@ function MetadataBadge({ result }: { result: OverlapResult }) {
                 alt=""
                 aria-hidden="true"
                 className="size-3.5 rounded-sm"
-                src="/jiten-favicon-32x32.png"
+                src="/jiten-favicon.ico"
               />
               <span>
                 {normalizeJitenDifficulty(

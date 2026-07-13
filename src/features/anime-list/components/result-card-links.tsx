@@ -56,7 +56,7 @@ function buildResultLinks(result: OverlapResult) {
     result.matchedJiten && [
       result.matchedJiten.entry.jitenUrl,
       "Jiten",
-      "/jiten-favicon-32x32.png",
+      "/jiten-favicon.ico",
     ],
   ].filter((link): link is string[] => Boolean(link))
 
