@@ -8,6 +8,7 @@ import {
   getAverageScorePresentation,
   getResultTitle,
 } from "@/features/anime-list/lib/result-presenters"
+import { normalizeJitenDifficulty } from "@/lib/jiten"
 import { statusDotClassName, statusLabel } from "@/lib/status"
 import type { OverlapResult } from "@/lib/types"
 import { cn } from "@/lib/utils"
@@ -134,8 +135,8 @@ function MetadataBadge({ result }: { result: OverlapResult }) {
                 src="/jiten-favicon-32x32.png"
               />
               <span>
-                {(
-                  Math.round(result.matchedJiten.entry.difficultyRaw * 10) / 10
+                {normalizeJitenDifficulty(
+                  result.matchedJiten.entry.difficultyRaw
                 ).toFixed(1)}
                 /5
               </span>

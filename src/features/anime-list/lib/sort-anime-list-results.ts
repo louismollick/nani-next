@@ -4,6 +4,7 @@ import type {
 } from "@/features/anime-list/domain/anime-list-enums"
 import type { OverlapResult } from "@/features/anime-list/domain/lookup-response"
 import { getEntryTitle } from "@/features/anime-list/lib/result-presenters"
+import { normalizeJitenDifficulty } from "@/lib/jiten"
 import { statusOrder } from "@/lib/status"
 
 function compareTitles(left: OverlapResult, right: OverlapResult) {
@@ -71,10 +72,10 @@ export function sortAnimeListResults(
     if (sortBy === "jitenDifficulty") {
       return compareOptionalNumbers(
         left.matchedJiten
-          ? Math.round(left.matchedJiten.entry.difficultyRaw * 10) / 10
+          ? normalizeJitenDifficulty(left.matchedJiten.entry.difficultyRaw)
           : undefined,
         right.matchedJiten
-          ? Math.round(right.matchedJiten.entry.difficultyRaw * 10) / 10
+          ? normalizeJitenDifficulty(right.matchedJiten.entry.difficultyRaw)
           : undefined,
         sortDirection,
         left,

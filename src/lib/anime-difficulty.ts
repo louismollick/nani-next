@@ -34,10 +34,6 @@ export function loadJitenAnimeDifficultySnapshot() {
   return cachedJitenAnimeDifficultySnapshot
 }
 
-export function getJitenDifficulty(entry: JitenAnimeDifficultyEntry) {
-  return Math.round(entry.difficultyRaw * 10) / 10
-}
-
 export function loadLearnNativelyAnimationLevelsSnapshot() {
   if (cachedLearnNativelyAnimationLevelsSnapshot) {
     return cachedLearnNativelyAnimationLevelsSnapshot

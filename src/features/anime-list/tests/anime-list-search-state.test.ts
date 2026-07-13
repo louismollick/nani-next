@@ -97,4 +97,24 @@ describe("anime-list-search-state", () => {
       durationRange: [24, 180],
     })
   })
+
+  it("validates and canonicalizes Jiten difficulty state", () => {
+    const validated = validateLookupSearch({
+      difficultyFilterMode: "JITENDIFFICULTY",
+      jitenDifficultyRange: [4.2, 1.1],
+      sortBy: "JITENDIFFICULTY",
+    })
+
+    expect(validated).toEqual({
+      ...defaultLookupSearchState,
+      difficultyFilterMode: "jitenDifficulty",
+      jitenDifficultyRange: [1.1, 4.2],
+      sortBy: "jitenDifficulty",
+    })
+    expect(canonicalizeLookupSearch(validated)).toEqual({
+      difficultyFilterMode: "jitenDifficulty",
+      jitenDifficultyRange: [1.1, 4.2],
+      sortBy: "jitenDifficulty",
+    })
+  })
 })

@@ -13,6 +13,7 @@ import {
   getSubtitleAvailability,
   normalizeGenreValue,
 } from "@/features/anime-list/lib/result-presenters"
+import { normalizeJitenDifficulty } from "@/lib/jiten"
 import { normalizeTitle } from "@/lib/normalize"
 import type { OverlapResult } from "@/lib/types"
 
@@ -161,7 +162,7 @@ export function filterAnimeListResults(
           facets.availableJitenDifficultyBounds
         ) ?? facets.availableJitenDifficultyBounds
       const difficulty = result.matchedJiten
-        ? Math.round(result.matchedJiten.entry.difficultyRaw * 10) / 10
+        ? normalizeJitenDifficulty(result.matchedJiten.entry.difficultyRaw)
         : null
       return Boolean(
         difficulty !== null &&

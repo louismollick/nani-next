@@ -136,5 +136,13 @@ describe("Jiten difficulty sorting", () => {
         "desc"
       ).map((result) => result.entry.id)
     ).toEqual([harder.entry.id, rated.entry.id, unrated.entry.id])
+
+    expect(
+      sortAnimeListResults(
+        [unrated, harder, rated],
+        "jitenDifficulty",
+        "asc"
+      ).map((result) => result.entry.id)
+    ).toEqual([rated.entry.id, harder.entry.id, unrated.entry.id])
   })
 })

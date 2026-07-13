@@ -19,6 +19,7 @@ import {
 } from "@/features/anime-list/server/load-anime-difficulty-snapshots"
 import { loadJimakuSnapshot } from "@/features/anime-list/server/load-jimaku-snapshot"
 import { getAniListRateLimitMeta } from "@/lib/anilist-rate-limit"
+import { normalizeJitenDifficulty } from "@/lib/jiten"
 import type {
   AnimeEntry,
   LookupResponse,
@@ -492,16 +493,12 @@ function matchesSubtitleFilter(
   return selectedSubtitleAvailability.includes(availability)
 }
 
-function matchesDifficultyFilter(
+export function matchesDifficultyFilter(
   result: OverlapResult,
   sortBy: BrowseSearch["sortBy"]
 ) {
   if (sortBy === "jpdbAverageDifficulty") {
     return Boolean(result.matchedJpdb)
-  }
-
-  if (sortBy === "jitenDifficulty") {
-    return Boolean(result.matchedJiten)
   }
 
   if (sortBy === "learnNativelyLevel") {
@@ -596,7 +593,10 @@ function normalizeMetadataRange(
   ] as NumericRange
 }
 
-function sortGlobalResults(results: OverlapResult[], search: BrowseSearch) {
+export function sortGlobalResults(
+  results: OverlapResult[],
+  search: BrowseSearch
+) {
   if (search.sortBy === "status") {
     return [...results].sort((left, right) => {
       if (!left.userList.inList && !right.userList.inList) {
@@ -630,10 +630,10 @@ function sortGlobalResults(results: OverlapResult[], search: BrowseSearch) {
   if (search.sortBy === "jitenDifficulty") {
     return [...results].sort((left, right) => {
       const leftValue = left.matchedJiten
-        ? Math.round(left.matchedJiten.entry.difficultyRaw * 10) / 10
+        ? normalizeJitenDifficulty(left.matchedJiten.entry.difficultyRaw)
         : undefined
       const rightValue = right.matchedJiten
-        ? Math.round(right.matchedJiten.entry.difficultyRaw * 10) / 10
+        ? normalizeJitenDifficulty(right.matchedJiten.entry.difficultyRaw)
         : undefined
       const titleDelta = (left.entry.media.title.primary ?? "").localeCompare(
         right.entry.media.title.primary ?? ""

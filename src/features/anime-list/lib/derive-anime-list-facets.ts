@@ -11,6 +11,7 @@ import {
   type NumericRange,
 } from "@/features/anime-list/lib/range-utils"
 import { normalizeGenreValue } from "@/features/anime-list/lib/result-presenters"
+import { normalizeJitenDifficulty } from "@/lib/jiten"
 
 export type AnimeListFacets = {
   availableGenres: Array<{ label: string; value: string }>
@@ -72,7 +73,7 @@ export function deriveAnimeListFacets(
       lookupState.results
         .map((result) => result.matchedJiten?.entry.difficultyRaw)
         .filter((value): value is number => typeof value === "number")
-        .map((value) => Math.round(value * 10) / 10)
+        .map(normalizeJitenDifficulty)
     ),
     availableLearnNativelyLevelBounds,
     availableLearnNativelyJlptBounds: availableLearnNativelyLevelBounds

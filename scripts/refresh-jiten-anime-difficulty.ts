@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import type { JitenAnimeDifficultyEntry } from "../src/lib/types"
 
 type JitenLink = { linkType?: unknown; url?: unknown }
 type JitenDeck = {
@@ -13,28 +14,25 @@ type JitenDeck = {
   links?: unknown
 }
 
-export type JitenAnimeDifficultyEntry = {
-  deckId: number
-  jitenUrl: string
-  titles: string[]
-  anilistId: number | null
-  myanimelistId: number | null
-  difficultyRaw: number
-}
-
 const rootDirectory = path.dirname(fileURLToPath(import.meta.url))
 const outputPath = path.resolve(
   rootDirectory,
   "../src/data/jiten-anime-difficulty.json"
 )
-const endpoint =
+export const endpoint =
   "https://api.jiten.moe/api/media-deck/get-media-decks-by-type/1"
 
-function externalId(links: JitenLink[], linkType: number) {
+function externalId(links: JitenLink[], linkType: 4 | 5) {
+  const expectedHost = linkType === 4 ? "anilist.co" : "myanimelist.net"
   for (const link of links) {
     if (link.linkType !== linkType || typeof link.url !== "string") continue
-    const match = link.url.match(/\/(\d+)\/?$/)
-    if (match) return Number.parseInt(match[1], 10)
+    try {
+      const url = new URL(link.url)
+      const match = url.pathname.match(/^\/anime\/(\d+)\/?$/)
+      if (url.hostname === expectedHost && match) {
+        return Number.parseInt(match[1], 10)
+      }
+    } catch {}
   }
   return null
 }
@@ -55,12 +53,18 @@ export function parseJitenAnimeDecks(payload: unknown) {
       ) {
         throw new Error(`Invalid difficultyRaw for deck ${deck.deckId}`)
       }
+      if (deck.difficultyRaw < 0 || deck.difficultyRaw > 5) {
+        throw new Error(`Out-of-range difficultyRaw for deck ${deck.deckId}`)
+      }
       if (seenDeckIds.has(deck.deckId as number)) {
         throw new Error(`Duplicate deckId: ${deck.deckId}`)
       }
       seenDeckIds.add(deck.deckId as number)
 
-      const links = Array.isArray(deck.links) ? (deck.links as JitenLink[]) : []
+      if (!Array.isArray(deck.links)) {
+        throw new Error(`Invalid links for deck ${deck.deckId}`)
+      }
+      const links = deck.links as JitenLink[]
       const titles = [
         deck.originalTitle,
         deck.romajiTitle,
